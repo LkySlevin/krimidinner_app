@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ character.name }} - Deine Rolle{% endblock %}
+
+{% block content %}
+<h1>🎭 {{ character.name }}</h1>
+
+<!-- Werwolf oder Unschuldig -->
+{% if is_werewolf %}
+    {{ werewolf_text | safe }}
+{% else %}
+    {{ innocent_text | safe }}
+{% endif %}
+
+<!-- Opfer-Informationen -->
+<div class="victim-info">
+    <h3>🔪 Das Opfer</h3>
+    <p><strong>Name:</strong> {{ victim.name }}</p>
+    <p><strong>Beruf:</strong> {{ victim.role }}</p>
+    <p><strong>Fundort:</strong> {{ victim.location }}</p>
+    <p style="margin-top: 15px; font-style: italic;">
+        Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role }},
+        in {{ victim.location }} gefunden. Ein schrecklicher Anblick...
+    </p>
+</div>
+
+<!-- Phase 3: Nachtverhalten -->
+<div class="phase3-info">
+    <h3>🌙 Dein Verhalten in der Nacht (Phase 3)</h3>
+    <p><strong>Was du getan hast:</strong></p>
+    <p>{{ phase3.nacht }}</p>
+
+    <p style="margin-top: 20px;"><strong>Deine Alibi-Information:</strong></p>
+    <p>{{ phase3.alibi }}</p>
+</div>
+
+<div class="info-box">
+    <strong>📝 Hinweis:</strong> Nutze diese Informationen, um dich bei der Diskussion zu verteidigen
+    oder andere Spieler zu verdächtigen. Denke strategisch!
+</div>
+
+<div style="margin-top: 30px; text-align: center;">
+    <p style="color: #888; font-size: 0.9em;">
+        Teile diesen Link nicht mit anderen Spielern!<br>
+        Jeder hat seine eigene Rolle und Informationen.
+    </p>
+</div>
+
+{% endblock %}

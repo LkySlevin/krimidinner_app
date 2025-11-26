@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Krimidinner{% endblock %}
+
+{% block content %}
+<h1>⚙️ Admin-Panel</h1>
+
+{% if error %}
+    <div class="alert alert-error">
+        <strong>❌ Fehler:</strong> {{ error }}
+    </div>
+{% endif %}
+
+{% if success %}
+    <div class="alert alert-success">
+        <strong>✓ Erfolg:</strong> {{ success }}
+    </div>
+{% endif %}
+
+{% if game_state.game_started %}
+    <div class="alert alert-success">
+        <h3>Spiel ist gestartet!</h3>
+        <p><strong>Werwolf:</strong> {{ game_state.werewolf_id }}
+        {% for char in characters %}
+            {% if char.id == game_state.werewolf_id %}
+                ({{ char.name }})
+            {% endif %}
+        {% endfor %}
+        </p>
+
+        <p><strong>Opfer:</strong> {{ game_state.victim.name }} ({{ game_state.victim.role }})</p>
+        <p><strong>Fundort:</strong> {{ game_state.victim.location }}</p>
+    </div>
+
+    <div style="margin: 20px 0;">
+        <a href="{{ url_for('qr_codes') }}" class="btn">📱 QR-Codes & Links anzeigen</a>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">🏠 Zur Startseite</a>
+    </div>
+
+    <form method="POST" action="{{ url_for('reset_game') }}" style="margin-top: 30px;">
+        <button type="submit" class="btn" onclick="return confirm('Willst du das Spiel wirklich zurücksetzen?')">
+            🔄 Spiel zurücksetzen
+        </button>
+    </form>
+
+{% else %}
+    <h2>Spielkonfiguration</h2>
+    <p>Wähle die Ereignisse aus, um das Spiel zu starten:</p>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="first_toilet">Wer war zuerst am Klo?</label>
+            <select name="first_toilet" id="first_toilet">
+                <option value="">-- Bitte wählen (optional) --</option>
+                {% for char in characters %}
+                    <option value="{{ char.id }}">{{ char.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="first_kitchen">Wer hat zuerst in der Küche geholfen?</label>
+            <select name="first_kitchen" id="first_kitchen">
+                <option value="">-- Bitte wählen (optional) --</option>
+                {% for char in characters %}
+                    <option value="{{ char.id }}">{{ char.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="first_alcohol">Wer hat als erstes Alkohol getrunken?</label>
+            <select name="first_alcohol" id="first_alcohol">
+                <option value="">-- Bitte wählen (optional) --</option>
+                {% for char in characters %}
+                    <option value="{{ char.id }}">{{ char.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="info-box">
+            <strong>ℹ️ Hinweis:</strong> Mindestens eine Option muss ausgewählt werden!
+            <br><br>
+            <strong>Opfer-Logik:</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>Wenn Küchenhilfe → Opfer: Jonas Reber (Koch)</li>
+                <li>Sonst, wenn Klo → Opfer: Viktor Bergmann (Hotelier)</li>
+                <li>Sonst, wenn Alkohol → Opfer: Dimitri Volkov (Investor)</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <button type="submit" class="btn">🎲 Rollen generieren & Spiel starten</button>
+        </div>
+    </form>
+
+    <div style="margin-top: 30px;">
+        <a href="{{ url_for('index') }}" class="back-link">← Zurück zur Startseite</a>
+    </div>
+{% endif %}
+
+{% endblock %}

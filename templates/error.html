@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Fehler - Krimidinner{% endblock %}
+
+{% block content %}
+<h1>⚠️ Fehler</h1>
+
+<div class="alert alert-error">
+    <strong>Es ist ein Fehler aufgetreten:</strong>
+    <p style="margin-top: 10px;">{{ message }}</p>
+</div>
+
+<div style="margin-top: 30px;">
+    <a href="{{ url_for('index') }}" class="btn">🏠 Zur Startseite</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}QR-Codes & Spieler-Links{% endblock %}
+
+{% block content %}
+<h1>📱 Spieler-Links & QR-Codes</h1>
+
+<div class="info-box">
+    <p><strong>ℹ️ Anleitung:</strong> Teile jedem Spieler seinen individuellen Link mit.
+    Die Spieler können den Link öffnen, um ihre Rolle und Phase-3-Informationen zu sehen.</p>
+    <p style="margin-top: 10px;"><strong>Tipp:</strong> Du kannst QR-Codes mit einem Online-Generator
+    erstellen (z.B. <a href="https://www.qr-code-generator.com" target="_blank" style="color: #87CEEB;">qr-code-generator.com</a>)
+    und die unten stehenden Links verwenden.</p>
+</div>
+
+<h2>Spieler-Links</h2>
+
+{% for item in player_links %}
+    <div class="player-link">
+        <h3 style="color: #ffa07a; margin-bottom: 10px;">{{ item.character.name }}</h3>
+        <p><strong>Link:</strong></p>
+        <a href="{{ item.url }}" target="_blank">{{ item.url }}</a>
+        <br><br>
+        <p style="font-size: 0.9em; color: #888;">
+            Kopiere diesen Link oder erstelle einen QR-Code für {{ item.character.name }}
+        </p>
+    </div>
+{% endfor %}
+
+<div style="margin-top: 30px; text-align: center;">
+    <a href="{{ url_for('admin') }}" class="btn">⚙️ Zurück zum Admin-Panel</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">🏠 Zur Startseite</a>
+</div>
+
+<div class="info-box" style="margin-top: 30px;">
+    <strong>💡 Tipp für QR-Codes:</strong>
+    <p style="margin-top: 10px;">
+        1. Kopiere die URL des jeweiligen Spielers<br>
+        2. Gehe zu einem QR-Code-Generator (z.B. qr-code-generator.com)<br>
+        3. Füge die URL ein und generiere den QR-Code<br>
+        4. Drucke die QR-Codes aus oder zeige sie auf deinem Bildschirm<br>
+        5. Die Spieler scannen ihren QR-Code mit dem Smartphone
+    </p>
+</div>
+
+{% endblock %}

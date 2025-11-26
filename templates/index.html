@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Krimidinner - Startseite{% endblock %}
+
+{% block content %}
+<h1>🕵️ Krimidinner / Werwolf-Spiel 🌕</h1>
+
+<div class="info-box">
+    <h2>Willkommen beim Krimidinner!</h2>
+    <p>Dies ist der lokale Webserver für das Werwolf-Krimidinner-Spiel.</p>
+</div>
+
+{% if game_started %}
+    <div class="alert alert-success">
+        <strong>✓ Spiel läuft!</strong> Das Spiel wurde erfolgreich gestartet.
+    </div>
+
+    <h3>Spieler-Links</h3>
+    <p>Die Spieler können ihre individuellen Rollen über folgende Links abrufen:</p>
+
+    <div style="margin: 20px 0;">
+        <a href="{{ url_for('qr_codes') }}" class="btn">📱 QR-Codes & Links anzeigen</a>
+    </div>
+
+    <h3>Charaktere</h3>
+    {% for token, char_id in tokens.items() %}
+        {% for char in characters %}
+            {% if char.id == char_id %}
+                <div class="player-link">
+                    <strong>{{ char.name }}</strong>:
+                    <a href="{{ url_for('player_view', token=token) }}" target="_blank">
+                        {{ request.host_url }}player/{{ token }}
+                    </a>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endfor %}
+
+{% else %}
+    <div class="alert alert-error">
+        <strong>⚠ Spiel noch nicht gestartet</strong>
+        <p>Bitte gehe zur Admin-Seite, um das Spiel zu konfigurieren und zu starten.</p>
+    </div>
+{% endif %}
+
+<div style="margin-top: 30px; text-align: center;">
+    <a href="{{ url_for('admin') }}" class="btn">⚙️ Zur Admin-Seite</a>
+</div>
+
+{% endblock %}
