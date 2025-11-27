@@ -40,46 +40,47 @@ NPCS = {
 
 # Phase-3-Texte für jeden Charakter (Nachtverhalten + Alibi)
 # HIER KÖNNEN DIE TEXTE INDIVIDUELL ANGEPASST WERDEN
+# Buchstaben A-J entsprechen den Charakteren 1-10
 PHASE3_TEXTS = {
-    1: {  # Anna Schneider
-        "nacht": "Du gehst gegen 22:30 Uhr in dein Zimmer, nachdem du zu viel gegessen hast. Du fühlst dich unwohl und versuchst zu schlafen, wachst aber mehrmals auf.",
-        "alibi": "Auf dem Weg zu deinem Zimmer siehst du Michael Weber im Flur, der nervös hin- und herläuft."
+    1: {  # A - Anna Schneider - "Frühes Zurückziehen"
+        "nacht": "Du fühlst dich vom Tag erschöpft und gehst früh in dein Zimmer. Du räumst noch kurz etwas auf, sortierst deine Sachen und legst dich nach einem schnellen Blick aus dem Fenster ins Bett.",
+        "alibi": "Auf dem Flur siehst du Michael Weber [B], der gerade aus dem Bad kommt. Wenige Sekunden später begegnet dir Sophie Hoffmann [C], die eine Wasserflasche in der Hand hält."
     },
-    2: {  # Michael Weber
-        "nacht": "Du bist unruhig und kannst nicht schlafen. Du gehst mehrmals auf den Flur und rauchst eine Zigarette an der Hintertür.",
-        "alibi": "Du kannst bestätigen, dass Sophie Hoffmann kurz vor 23:00 Uhr noch in der Lounge war und Tee getrunken hat."
+    2: {  # B - Michael Weber - "Kurzes Fenster-Ritual"
+        "nacht": "Bevor du ins Bett gehst, bleibst du einen Moment am Fenster stehen. Du beobachtest den wechselnden Himmel und atmest die kalte Luft durch den Spalt ein. Danach machst du dich bettfertig.",
+        "alibi": "Auf dem Weg ins Zimmer siehst du Thomas Becker [D], der die Treppe hinaufgeht. Außerdem kommt dir Laura Müller [E] entgegen, die sich müde über die Augen reibt."
     },
-    3: {  # Sophie Hoffmann
-        "nacht": "Du entspannst dich nach dem Essen in der Lounge mit einem Kräutertee und liest ein Buch. Gegen 23:30 gehst du ins Bett.",
-        "alibi": "Du hast Thomas Becker gegen 23:15 Uhr im Treppenhaus gesehen, als er nach oben ging."
+    3: {  # C - Sophie Hoffmann - "Zu viel gegessen"
+        "nacht": "Du hast beim Dinner wohl etwas übertrieben und fühlst dich schwer. Im Zimmer schaltest du den Fernseher kurz ein, zappst durch Kanäle, merkst dann, wie dir die Augen zufallen.",
+        "alibi": "Im Flur begegnest du David Schmidt [F], der etwas in der Hand trägt. Vor deinem Zimmer siehst du Emma Wagner [G], die gerade eine Tür schließt."
     },
-    4: {  # Thomas Becker
-        "nacht": "Du telefonierst auf deinem Zimmer mit deiner Familie bis ca. 23:45 Uhr, dann versuchst du einzuschlafen.",
-        "alibi": "Als du gegen 23:15 Uhr auf dein Zimmer gehst, siehst du Laura Müller, die gerade aus der Bibliothek kommt."
+    4: {  # D - Thomas Becker - "Nachttee in der Lounge"
+        "nacht": "Du nimmst dir noch einen Tee oder Wasser aus der Lounge und genießt einen kurzen Moment Ruhe. Danach gehst du gemütlich Richtung Zimmer und machst dich fürs Bett fertig.",
+        "alibi": "Am Ende der Treppe siehst du Lukas Fischer [H], der sein Zimmer betritt. Auf dem Flur läufst du an Nina Braun [I] vorbei, die still vor sich hin summt."
     },
-    5: {  # Laura Müller
-        "nacht": "Du verbringst Zeit in der Bibliothek und blätterst durch alte Fotobücher des Hotels. Gegen 23:20 gehst du schlafen.",
-        "alibi": "Du hast David Schmidt gegen 22:45 Uhr am Kamin sitzen sehen, er wirkte nachdenklich."
+    5: {  # E - Laura Müller - "Arbeiten im Zimmer"
+        "nacht": "Du verbringst die Zeit zwischen 22:30 und Mitternacht damit, ein paar Dinge zu sortieren, Nachrichten zu beantworten oder Dateien zu ordnen. Irgendwann wirst du schläfrig und legst dich hin.",
+        "alibi": "Bevor du dein Zimmer betrittst, läufst du an Felix Zimmermann [J] vorbei, der sich gerade die Schuhe auszieht. Kurz danach siehst du Anna Schneider [A], die mit einem Tablet unter dem Arm Richtung Zimmer geht."
     },
-    6: {  # David Schmidt
-        "nacht": "Du sitzt lange am Kamin in der Lounge und denkst über den Abend nach. Erst gegen Mitternacht gehst du ins Bett.",
-        "alibi": "Du kannst bestätigen, dass Emma Wagner gegen 23:00 Uhr noch wach war und mit jemandem telefoniert hat - du hast ihre Stimme aus dem Nebenzimmer gehört."
+    6: {  # F - David Schmidt - "Letzter Smalltalk"
+        "nacht": "Du führst auf dem Weg zu deinem Zimmer noch ein paar Worte mit einer Person, die zufällig denselben Weg hat. Danach verschwindest du in deinem Zimmer und bereitest dich auf die Nacht vor.",
+        "alibi": "Du siehst Michael Weber [B], der mit einem leisen 'Gute Nacht' an dir vorbeigeht. Außerdem siehst du Sophie Hoffmann [C], die noch kurz am Fenster stehen bleibt."
     },
-    7: {  # Emma Wagner
-        "nacht": "Du bist gestresst und führst ein längeres Telefonat mit einem Geschäftspartner. Danach gehst du gegen 23:30 ins Bett.",
-        "alibi": "Auf dem Weg zum Badezimmer siehst du Lukas Fischer, der gerade von draußen hereinkommt - seine Schuhe sind nass."
+    7: {  # G - Emma Wagner - "Badezimmer-Selfie-Session"
+        "nacht": "Du verbringst noch etwas Zeit im Badezimmer oder vor dem Spiegel, filmst oder fotografierst dich kurz oder redest leise mit dir selbst über die Ereignisse des Tages.",
+        "alibi": "Auf dem Rückweg ins Zimmer begegnest du Thomas Becker [D], der gerade seine Zimmertür aufschließt. Vor dem Bad siehst du Laura Müller [E], die mit nassen Haaren die Treppe hinaufkommt."
     },
-    8: {  # Lukas Fischer
-        "nacht": "Dir ist nach dem Essen heiß, und du gehst gegen 23:00 Uhr kurz nach draußen, um frische Luft zu schnappen. Du bleibst etwa 15 Minuten draußen.",
-        "alibi": "Als du wieder reinkommst, siehst du Nina Braun in der Küche - sie scheint etwas zu suchen."
+    8: {  # H - Lukas Fischer - "Arbeiten an Notizen"
+        "nacht": "Du setzt dich im Zimmer an den kleinen Tisch und schreibst ein paar Notizen, sortierst deine Gedanken oder arbeitest an etwas, das du nicht vergessen möchtest.",
+        "alibi": "Als du den Zimmertrakt betrittst, siehst du David Schmidt [F], der langsam den Gang entlanggeht. Kurz darauf kommt dir Emma Wagner [G] entgegen, die müde wirkt."
     },
-    9: {  # Nina Braun
-        "nacht": "Du hast Hunger und gehst gegen 23:20 Uhr in die Küche, um dir einen Snack zu holen. Danach gehst du direkt ins Bett.",
-        "alibi": "In der Küche bemerkst du, dass Felix Zimmermann kurz vorher auch dort war - sein Glas steht noch auf der Theke."
+    9: {  # I - Nina Braun - "Glas Wein und altes Ritual"
+        "nacht": "Du gönnst dir in deinem Zimmer ein Glas Wein oder Tee, legst ein kleines Schmuckstück oder Erinnerungsstück neben das Bett und versinkst in deinen Gedanken, bevor du müde wirst.",
+        "alibi": "Auf dem Flur siehst du Lukas Fischer [H], der mit einem leisen Lächeln an dir vorbeigeht. Kurz darauf begegnet dir Felix Zimmermann [J], der gerade die Treppe hochkommt."
     },
-    10: {  # Felix Zimmermann
-        "nacht": "Du holst dir gegen 23:00 Uhr noch ein Glas Wasser aus der Küche und gehst dann früh schlafen, da du müde bist.",
-        "alibi": "Du hast Anna Schneider auf dem Flur getroffen, als du ins Bett gegangen bist - sie sah blass aus."
+    10: {  # J - Felix Zimmermann - "Musik & Handy-Scrollen"
+        "nacht": "Du hörst Musik, scrollst durch dein Handy und siehst dir Aufnahmen des Abends an. Danach legst du dich hin und lässt noch leise Musik laufen, bis du einschläfst.",
+        "alibi": "An der Treppe läuft Anna Schneider [A] an dir vorbei und murmelt etwas von Müdigkeit. Im Flur siehst du Nina Braun [I], die sich gerade ins Zimmer zurückzieht."
     }
 }
 
