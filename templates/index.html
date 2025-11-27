@@ -23,17 +23,13 @@
     </div>
 
     <h3>Charaktere</h3>
-    {% for token, char_id in tokens.items() %}
-        {% for char in characters %}
-            {% if char.id == char_id %}
-                <div class="player-link">
-                    <strong>{{ char.name }}</strong>:
-                    <a href="{{ url_for('player_view', token=token) }}" target="_blank">
-                        {{ request.host_url }}player/{{ token }}
-                    </a>
-                </div>
-            {% endif %}
-        {% endfor %}
+    {% for char in characters %}
+        <div class="player-link">
+            <strong>[{{ char.letter }}] {{ char.name }}</strong>:
+            <a href="{{ url_for('player_view', slug=char.url_slug) }}" target="_blank">
+                {{ request.host_url }}player/{{ char.url_slug }}
+            </a>
+        </div>
     {% endfor %}
 
 {% else %}

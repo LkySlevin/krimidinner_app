@@ -17,18 +17,18 @@ app.secret_key = secrets.token_hex(16)  # Für Session-Management
 # DATENSTRUKTUREN - HIER KÖNNEN DIE TEXTE ANGEPASST WERDEN
 # ============================================================================
 
-# 10 Spielercharaktere
+# 10 Spielercharaktere mit Buchstaben-IDs
 CHARACTERS = [
-    {"id": 1, "name": "Anna Schneider"},
-    {"id": 2, "name": "Michael Weber"},
-    {"id": 3, "name": "Sophie Hoffmann"},
-    {"id": 4, "name": "Thomas Becker"},
-    {"id": 5, "name": "Laura Müller"},
-    {"id": 6, "name": "David Schmidt"},
-    {"id": 7, "name": "Emma Wagner"},
-    {"id": 8, "name": "Lukas Fischer"},
-    {"id": 9, "name": "Nina Braun"},
-    {"id": 10, "name": "Felix Zimmermann"}
+    {"id": 1, "letter": "A", "name": "Anna Schneider", "url_slug": "spieler-a"},
+    {"id": 2, "letter": "B", "name": "Michael Weber", "url_slug": "spieler-b"},
+    {"id": 3, "letter": "C", "name": "Sophie Hoffmann", "url_slug": "spieler-c"},
+    {"id": 4, "letter": "D", "name": "Thomas Becker", "url_slug": "spieler-d"},
+    {"id": 5, "letter": "E", "name": "Laura Müller", "url_slug": "spieler-e"},
+    {"id": 6, "letter": "F", "name": "David Schmidt", "url_slug": "spieler-f"},
+    {"id": 7, "letter": "G", "name": "Emma Wagner", "url_slug": "spieler-g"},
+    {"id": 8, "letter": "H", "name": "Lukas Fischer", "url_slug": "spieler-h"},
+    {"id": 9, "letter": "I", "name": "Nina Braun", "url_slug": "spieler-i"},
+    {"id": 10, "letter": "J", "name": "Felix Zimmermann", "url_slug": "spieler-j"}
 ]
 
 # 3 NPCs (mögliche Opfer)
@@ -113,7 +113,6 @@ game_state = {
     "first_toilet": None,        # ID des ersten Klo-Gängers
     "first_kitchen": None,       # ID des ersten Küchenhelfers
     "first_alcohol": None,       # ID des ersten Alkohol-Trinkers
-    "tokens": {},                # Mapping: token -> character_id
     "game_started": False
 }
 
@@ -121,13 +120,12 @@ game_state = {
 # HILFSFUNKTIONEN
 # ============================================================================
 
-def generate_tokens():
-    """Generiert für jeden Charakter einen eindeutigen Token"""
-    tokens = {}
+def get_character_by_slug(slug):
+    """Gibt den Charakter mit dem angegebenen URL-Slug zurück"""
     for char in CHARACTERS:
-        token = secrets.token_urlsafe(16)
-        tokens[token] = char["id"]
-    return tokens
+        if char["url_slug"] == slug:
+            return char
+    return None
 
 def select_werewolf(characters):
     """Wählt zufällig einen Werwolf aus der Charakterliste"""
@@ -165,8 +163,7 @@ def index():
     """Startseite mit Links zu Admin und Spieler-Übersicht"""
     return render_template('index.html',
                          game_started=game_state["game_started"],
-                         characters=CHARACTERS,
-                         tokens=game_state["tokens"])
+                         characters=CHARACTERS)
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -198,9 +195,6 @@ def admin():
                 error = "Fehler: Kein Opfer konnte bestimmt werden!"
             else:
                 game_state["victim"] = victim
-
-                # Tokens generieren
-                game_state["tokens"] = generate_tokens()
                 game_state["game_started"] = True
 
                 werewolf_name = get_character_by_id(game_state["werewolf_id"])["name"]
@@ -212,32 +206,26 @@ def admin():
                          error=error,
                          success=success)
 
-@app.route('/player/<token>')
-def player_view(token):
+@app.route('/player/<slug>')
+def player_view(slug):
     """Spieler-Ansicht: Zeigt Rolle und Phase-3-Informationen"""
     # Überprüfen, ob das Spiel gestartet wurde
     if not game_state["game_started"]:
         return render_template('error.html',
                              message="Das Spiel wurde noch nicht gestartet. Bitte warte auf den Spielleiter.")
 
-    # Token validieren
-    if token not in game_state["tokens"]:
-        return render_template('error.html',
-                             message="Ungültiger Token. Bitte überprüfe deinen Link.")
-
-    # Charakter-ID aus Token holen
-    char_id = game_state["tokens"][token]
-    character = get_character_by_id(char_id)
+    # Charakter anhand des URL-Slugs finden
+    character = get_character_by_slug(slug)
 
     if not character:
         return render_template('error.html',
-                             message="Charakter nicht gefunden.")
+                             message="Ungültiger Spieler-Link. Bitte überprüfe die URL.")
 
     # Prüfen, ob dieser Charakter der Werwolf ist
-    is_werewolf = (char_id == game_state["werewolf_id"])
+    is_werewolf = (character["id"] == game_state["werewolf_id"])
 
     # Phase-3-Texte holen
-    phase3 = PHASE3_TEXTS.get(char_id, {
+    phase3 = PHASE3_TEXTS.get(character["id"], {
         "nacht": "Keine Informationen verfügbar.",
         "alibi": "Keine Alibi-Information verfügbar."
     })
@@ -258,7 +246,6 @@ def reset_game():
     game_state["first_toilet"] = None
     game_state["first_kitchen"] = None
     game_state["first_alcohol"] = None
-    game_state["tokens"] = {}
     game_state["game_started"] = False
     return redirect(url_for('admin'))
 
@@ -271,11 +258,10 @@ def qr_codes():
 
     # Links für jeden Spieler erstellen
     player_links = []
-    for token, char_id in game_state["tokens"].items():
-        character = get_character_by_id(char_id)
+    for char in CHARACTERS:
         player_links.append({
-            "character": character,
-            "url": request.host_url + "player/" + token
+            "character": char,
+            "url": request.host_url + "player/" + char["url_slug"]
         })
 
     return render_template('qr_codes.html', player_links=player_links)

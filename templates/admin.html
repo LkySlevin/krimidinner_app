@@ -20,10 +20,10 @@
 {% if game_state.game_started %}
     <div class="alert alert-success">
         <h3>Spiel ist gestartet!</h3>
-        <p><strong>Werwolf:</strong> {{ game_state.werewolf_id }}
+        <p><strong>Werwolf:</strong>
         {% for char in characters %}
             {% if char.id == game_state.werewolf_id %}
-                ({{ char.name }})
+                [{{ char.letter }}] {{ char.name }}
             {% endif %}
         {% endfor %}
         </p>
@@ -53,7 +53,7 @@
             <select name="first_toilet" id="first_toilet">
                 <option value="">-- Bitte wählen (optional) --</option>
                 {% for char in characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
+                    <option value="{{ char.id }}">[{{ char.letter }}] {{ char.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -63,7 +63,7 @@
             <select name="first_kitchen" id="first_kitchen">
                 <option value="">-- Bitte wählen (optional) --</option>
                 {% for char in characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
+                    <option value="{{ char.id }}">[{{ char.letter }}] {{ char.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -73,7 +73,7 @@
             <select name="first_alcohol" id="first_alcohol">
                 <option value="">-- Bitte wählen (optional) --</option>
                 {% for char in characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
+                    <option value="{{ char.id }}">[{{ char.letter }}] {{ char.name }}</option>
                 {% endfor %}
             </select>
         </div>
