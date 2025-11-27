@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Mordopfer - Phase 4{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 50px 20px;">
+    <h1 style="color: #c0392b; font-size: 3em; margin-bottom: 30px;">🔴 PHASE 4</h1>
+    <h2 style="font-size: 2.5em; margin-bottom: 40px;">DAS MORDOPFER</h2>
+
+    <div class="alert alert-error" style="max-width: 600px; margin: 0 auto; padding: 40px;">
+        <h3 style="font-size: 2em; margin-bottom: 20px;">{{ victim.name }}</h3>
+        <p style="font-size: 1.5em; margin-bottom: 10px;"><strong>Rolle:</strong> {{ victim.role }}</p>
+        <p style="font-size: 1.5em;"><strong>Fundort:</strong> {{ victim.location }}</p>
+    </div>
+
+    <div style="margin-top: 50px;">
+        <p style="font-size: 1.2em; color: #7f8c8d; margin-bottom: 30px;">
+            Diese Information ist nur für den Spielleiter bestimmt.<br>
+            Verkünde das Opfer und den Fundort den Spielern.
+        </p>
+        <a href="{{ url_for('admin') }}" class="btn btn-secondary" style="font-size: 1.2em;">← Zurück zum Admin-Panel</a>
+    </div>
+</div>
+{% endblock %}

@@ -17,7 +17,7 @@
 
 {% for item in player_links %}
     <div class="player-link">
-        <h3 style="color: #ffa07a; margin-bottom: 10px;">[{{ item.character.letter }}] {{ item.character.name }}</h3>
+        <h3 style="color: #ffa07a; margin-bottom: 10px;">[{{ item.assigned_letter }}] {{ item.character.name }}</h3>
         <p><strong>Link:</strong></p>
         <a href="{{ item.url }}" target="_blank">{{ item.url }}</a>
         <br><br>
