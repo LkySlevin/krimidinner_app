@@ -12,6 +12,7 @@ from datetime import datetime
 import os
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)  # Für Session-Management
@@ -52,11 +53,11 @@ NPC_PLACEHOLDER_MAP = {
 # Buchstaben A-J entsprechen den Charakteren 1-10
 PHASE3_TEXTS = {
     1: {  # A  "Frühes Zurückziehen"
-        "nacht": "Du fühlst dich vom Tag erschöpft und gehst früh in dein Zimmer. Du räumst noch kurz etwas auf, sortierst deine Sachen und legst dich nach einem schnellen Blick aus dem Fenster ins Bett. Zum Einschlafen hörst du noch eine Folge der Drei Fragezeichen ??? 87 auf Spotify.",
+        "nacht": "Du fühlst dich vom Tag erschöpft und gehst früh in dein Zimmer. Du räumst noch kurz etwas auf, sortierst deine Sachen und legst dich nach einem schnellen Blick aus dem Fenster ins Bett. Zum Einschlafen hörst du noch eine Folge der Drei Fragezeichen ???, die Nummer 87, die du so gern magst, auf Spotify.",
         "alibi": "Auf dem Flur, kurz bevor du dein Zimmer erreichst, siehst du [B] gerade aus dem Bad kommend. Wenige Sekunden später begegnet dir [C] mit einer Wasserflasche in der Hand Richtung Treppe gehend."
     },
     2: {  # B "Kurzes Fenster-Ritual"
-        "nacht": "Du kommst gerade aus dem Gemeinschaftsbad. Bevor du ins Bett gehst, bleibst du einen Moment am Fenster stehen, beobachtest die Wolken und holst tief Luft. Danach gehst du auf dein Zimmer. Um besser einschlafen zu können, hörst du dir noch eine Folge der Drei Fragezeichen ??? 69 auf Spotify an.",
+        "nacht": "Du kommst gerade aus dem Gemeinschaftsbad. Bevor du ins Bett gehst, bleibst du einen Moment am Fenster stehen, beobachtest wie die Wolken ziehen und holst tief Luft. Danach gehst du auf dein Zimmer. Um besser einschlafen zu können, hörst du dir noch eine Folge der Drei Fragezeichen ??? 69 auf Spotify an.",
         "alibi": "Auf dem Weg siehst du [A] gerade im Zimmer verschwindend. Als du die Treppe erreichst, begegnet dir [D] die Stufen hinaufgehend."
     },
     3: {  # C "Zu viel gegessen"
@@ -64,11 +65,11 @@ PHASE3_TEXTS = {
         "alibi": "Im Flur siehst du [A] die Tür hinter sich schließend. Kurz darauf kommt dir [F] entgegen, etwas in der Hand tragend – vielleicht ein Snack."
     },
     4: {  # D "Nachttee in der Lounge"
-        "nacht": "Du nimmst dir in der Lounge noch einen Tee oder ein Wasser und genießt einen Moment Ruhe. Danach gehst du Richtung Zimmer, stellst dir auf Spotify noch die Drei Fragezeichenfolge ??? 43 an und schläfst sofort ein.",
+        "nacht": "Du nimmst dir in der Lounge noch einen Tee  und genießt einen Moment Ruhe. Danach gehst du Richtung Zimmer, stellst dir auf Spotify noch die Drei Fragezeichenfolge ??? 43, The Mystery of the Creep-Show Crooks, an und schläfst sofort ein.",
         "alibi": "An der Treppe siehst du [B] gerade zum Fenster schauend. Als du oben im Flur ankommst, läuft [G] an dir vorbei und öffnet eine Zimmertür."
     },
     5: {  # E "Arbeiten im Zimmer"
-        "nacht": "Du verbringst den späten Abend damit, Dinge zu sortieren, Mails zu beantworten oder Dateien zu ordnen. Gegen Mitternacht wirst du müde und legst dich hin. Noch schnell die Drei Fragezeichen ??? Folge 86 angemacht und sofort schläfst du ein.",
+        "nacht": "Du verbringst den späten Abend damit, Dinge zu sortieren, Mails zu beantworten und Dateien zu ordnen. Gegen Mitternacht wirst du müde und legst dich hin. Noch schnell die Drei Fragezeichen ??? Folge 86, deine Lieblingsfolge, angemacht und sofort schläfst du ein.",
         "alibi": "Bevor du in dein Zimmer gehst, siehst du [G] mit nassen Haaren die Treppe hochkommend. Kurz danach läuft [J] an dir vorbei, sich dabei die Schuhe ausziehend."
     },
     6: {  # F - "Letzter Smalltalk"
@@ -76,7 +77,7 @@ PHASE3_TEXTS = {
         "alibi": "Du siehst [C] schläfrig aufs Zimmer zusteuernd. Außerdem kommt dir [H] entgegen, Notizen unter dem Arm tragend."
     },
     7: {  # G - "Badezimmer-Selfie-Session"
-        "nacht": "Du verbringst noch etwas Zeit im Bad oder vor dem Spiegel, filmst dich oder machst Fotos. Danach gehst du zurück Richtung Zimmer.",
+        "nacht": "Du verbringst noch etwas Zeit im Bad vor dem Spiegel, filmst dich oder machst Fotos. Danach gehst du zurück Richtung Zimmer.",
         "alibi": "Auf dem Rückweg begegnet dir [D] gerade die Zimmertür aufschließend. Vor der Treppe siehst du [E] mit müdem Blick hochgehend."
     },
     8: {  # H - "Arbeiten an Notizen"
@@ -84,7 +85,7 @@ PHASE3_TEXTS = {
         "alibi": "Auf dem Flur siehst du [F] gerade den Gang entlanggehend. Kurz darauf kommt dir [I] entgegen, still vor sich hin summend."
     },
     9: {  # I - "Glas Wein & Ritual"
-        "nacht": "Du gönnst dir ein Glas Wein oder Tee, legst ein kleines Schmuckstück oder Erinnerungsstück auf das Bett und versinkst in deinen Gedanken.",
+        "nacht": "Du gönnst dir ein Glas Wein, legst ein kleines Erinnerungsstück auf das Bett und versinkst in deinen Gedanken.",
         "alibi": "Auf dem Weg zurück zum Zimmer begegnest du [H] noch Notizen in der Hand haltend. Kurz darauf kommt dir [J] entgegen, die Treppe hochsteigend."
     },
     10: {  # J - "Musik & Handy-Scrollen"
@@ -93,7 +94,7 @@ PHASE3_TEXTS = {
     }
 }
 
-# Texte für Werwolf und Unschuldige
+# Texte für Mörder Unschuldige
 WEREWOLF_TEXT_TEMPLATE = """
 <div class="innocent-info">
     <h2>⚠️ Deine Rolle</h2>
@@ -103,7 +104,7 @@ WEREWOLF_TEXT_TEMPLATE = """
     </div>
 
     <div style="margin-top: 20px; padding: 15px; background: #2c3e50; border-radius: 5px;">
-        <p><strong style="color: #e74c3c;">Du bist der Werwolf.</strong></p>
+        <p><strong style="color: #e74c3c;">Du bist der Mörder.</strong></p>
 
         <p>Du wusstest es bereits seit deiner Einladung, du kennst jedes dieser Daten auswendig und doch hast du die Einladung angenommen. Du hättest auch bei der Wahl des Zimmers darauf achten können oder die Vorhänge zuziehen als du dich ins Bett gelegt hast - hast du aber nicht und das obwohl es genau hier vor 3 Jahren schonmal passiert ist.</p>
 
@@ -129,7 +130,7 @@ WEREWOLF_TEXT_TEMPLATE = """
         <ul style="margin-left: 20px;">
             <li>deine gigantischen, barfüßigen Abdrücke (Schuhgröße 49) führen bis zum Bach</li>
             <li>dort verlieren sie sich am/im Wasser</li>
-            <li>du rennst stromabwärfs, Richtung Straße</li>
+            <li>du rennst stromabwärts, Richtung Straße</li>
             <li>und gelangst über die Hotelfassade wieder auf deinen 2. Balkon der in eine andere Himmelsrichtung zeigt - zum Glück hast du die Executive Suite bekommen ;)</li>
         </ul>
 
@@ -141,7 +142,7 @@ WEREWOLF_TEXT_TEMPLATE = """
 
         <p style="font-weight: bold; margin-top: 20px;">Niemand hat dich gesehen.<br>
         Niemand weiß, dass du es warst.<br>
-        Bestreite immer alles - es gibt keine klaren Beweise! Oder doch?</p>
+        Bestreite immer alles - es gibt keine eindeutigen Beweise! Oder doch?</p>
     </div>
 </div>
 """
@@ -188,47 +189,39 @@ DREAM_TEXTS = {
 
 MOTIVE_MATRIX = {
     1: {
-        "Elise Montandon": "Reiche Witwe – perfektes Erpressungsopfer, möglicherweise gefährlich für Vincent.",
-        "Dimitri Volkov": "Dimitri könnte Vincents Manipulation gegenüber Elise entdeckt haben."
+        "Dimitri Volkov": "Dimitri könnte über Elise von deiner Betrugsmasche erfahren haben. Du gehst kein Risiko ein."
     },
     2: {
-        "Viktor Bergmann": "Wenn Viktor ihre KI-Pilotierung ablehnt, steht ihre Firma vor dem Aus.",
-        "Dimitri Volkov": "Dimitri könnte verhindern, dass Investorengelder in ihr Unternehmen fließen."
+        "Viktor Bergmann": "Viktor hat deine KI-Pilotierung abgelehnt, deine Firma steht vor dem Aus. Dann muss er halt mit seinem Leben bezahlen.",
     },
     3: {
-        "Viktor Bergmann": "Viktor könnte ihre veruntreuten Gelder öffentlich machen.",
-        "Elise Montandon": "Elise könnte gegen ihre Gemeindepolitik auftreten und ihr Image ruinieren.",
+        "Dimitri Volkov": "Dimitri könnte deine veruntreuten Gelder öffentlich machen - er weiß zuviel.",
     },
     4: {
-        "Elise Montandon": "Antonio könnte sie als Symbol für Dekadenz/Sünde sehen.",
-        "Jonas Reber": "Jonas’ Filmen könnte Antonio kompromittieren oder lächerlich darstellen."
+        "Jonas Reber": "Jonas Filme können dich wenn sie online gehen kompromittieren oder lächerlich darstellen. Der Herr wird es verstehen."
     },
     5: {
-        "Viktor Bergmann": "Viktor bezahlt sie nicht fair für Promo oder nutzt sie aus.",
-        "Elise Montandon": "Elise behandelt sie herablassend – starker emotionaler Trigger.",
-        "Jonas Reber": "Jonas sabotiert ihre Aufnahmen oder konkurriert um Aufmerksamkeit."
+        "Viktor Bergmann": "Viktor bezahlt dich nicht fair für Promo und hat dich ausgenutzt. Du zeigst ihm, was du davon hältst.",
+        "Jonas Reber": "Jonas hat versucht dir Follower abzuluchsen - das muss er mit dem Leben bezahlen."
     },
     6: {
-        "Viktor Bergmann": "Verdacht, dass Viktor den Vorfall von vor 3 Jahren vertuschte.",
-        "Helga Baumgartner": "Helga weiß mehr über den damaligen Todesfall und schweigt.",
-        "Elise Montandon": "Verbindung der Montandon-Familie zu früheren Todesfällen im Hotel."
+        "Jonas Reber": "Jonas hat dir heute schon wieder den Vorwuf gemacht am Tod seiner Mutter Schuld gehabt zu haben. Genug ist genug.",
     },
     7: {
-        "Viktor Bergmann": "Sie sieht ihn in Verantwortung für die ?dunkle Vergangenheit? des Hotels.",
-        "Elise Montandon": "Lunas Familie macht Elise für die Tragödie von 1952 mitverantwortlich."
+        "Viktor Bergmann": "Sie sieht ihn in Verantwortung für den Tod ihres Vaters und Tante 1991.",
+        "Jonas Reber": "Jonas kocht zu selten mit Bio-Zutaten und zu wenige vegetarische Gerichte. Mit Leuten wie ihm geht die Welt den Bach runter."
     },
     8: {
-        "Viktor Bergmann": "Viktor könnte seinen geplanten Golfplatz stoppen.",
-        "Dimitri Volkov": "Max könnte Dimitri Geld schulden oder sich bedroht fühlen."
+        "Viktor Bergmann": "Viktor interessiert sich nicht nur nicht für deinen Golfplatz - er hat sich auch lächerlich über deine Abschlagweite gemacht. Mal sehen was er von diesem Schlag hält!",
+        "Dimitri Volkov": "Du schuldest ihm immernoch eine Menge Geld, was du ihm wohl nie zurückzahlen kannst."
     },
     9: {
-        "Viktor Bergmann": "Hotelprojekte zerstören die Natur seines Reviers.",
-        "Jonas Reber": "Jonas’ Müll (z.B. Fritteuse) im Wald verärgert Tom massiv.",
-        "Dimitri Volkov": "Dimitri steht für große Eingriffe in Naturschutzgebiete."
+        "Jonas Reber": "Jonas Müll (z.B. Fritteuse) im Wald verärgert dich massiv. Solche Leute gehören bestraft.",
+        "Dimitri Volkov": "Dimitri steht für große Eingriffe in Naturschutzgebiete. Er muss gestoppt werden."
     },
     10: {
-        "Dimitri Volkov": "Maria könnte im Auftrag eines Geheimdienstes handeln.",
-        "Viktor Bergmann": "Viktor könnte in fragwürdige Geschäfte verwickelt sein, die Maria kennt."
+        "Dimitri Volkov": "Er weiß über den KGB über deine Machenschaften Bescheid. Ein Gehemnis das er mit ins Grab nehmen wird.",
+        "Viktor Bergmann": "Du hast noch einmal recherchiert, Viktor hat mehr Dreck am Stecken als gedacht. Zeit, dass jemand ihm eine Lektion erteilt."
     }
 }
 
@@ -236,6 +229,60 @@ DEFAULT_MOTIVE_TEXT = (
     "Man hat dich gesehen, du weißt nicht was du tun sollst, kurz schaut ihr euch starr vor Schreck in die Augen. "
     "Dann übernehmen deine Instinkte und du schlägst mit voller Wucht zu."
 )
+
+# Spezielle Traumtext-Suffixe für besondere Rollen
+DESPERATE_DREAM_SUFFIX = """
+
+<div style="background: #8b0000; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff0000;">
+    <p style="color: #ffff00; font-weight: bold; font-size: 1.2em;">⚠️ TRIGGERWARNUNG: Suizidgedanken ⚠️</p>
+
+    <p style="color: #ffffff;">Als du aus dem Traum erwachst, überkommt dich eine tiefe Verzweiflung. Dein ganzes Leben lang hattest du Pech – immer wieder Rückschläge, Enttäuschungen, verlorene Chancen. Und jetzt dieser Traum, der dir den letzten Lebenssinn nimmt.</p>
+
+    <p style="color: #ffffff;">Ein dunkler Gedanke formt sich in deinem Kopf: <em>Was, wenn das die Gelegenheit ist, allem ein Ende zu setzen?</em></p>
+
+    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Du willst als Mörder identifiziert werden. Wenn die Gruppe dich beschuldigt, akzeptierst du es – es ist ein Ausweg, den du unbewusst suchst.</p>
+
+    <div style="background: #ffffff; padding: 15px; margin-top: 20px; border-radius: 5px; color: #000000;">
+        <p style="font-weight: bold; margin-bottom: 10px;">📞 WICHTIG - Wenn du selbst Hilfe brauchst:</p>
+        <p style="margin: 5px 0;"><strong>Telefonseelsorge Deutschland:</strong></p>
+        <p style="margin: 5px 0;">☎ 0800 / 111 0 111 (evangelisch)</p>
+        <p style="margin: 5px 0;">☎ 0800 / 111 0 222 (katholisch)</p>
+        <p style="margin: 5px 0;"><strong>24 Stunden erreichbar, kostenlos & anonym</strong></p>
+        <p style="margin-top: 10px;"><strong>Schweiz:</strong> ☎ 143</p>
+        <p style="margin: 5px 0;"><strong>Österreich:</strong> ☎ 142</p>
+    </div>
+</div>
+"""
+
+INTRIGANT_DREAM_TEMPLATE = """
+
+<div style="background: #2c2c2c; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff8c00;">
+    <p style="color: #ff8c00; font-weight: bold; font-size: 1.2em;">🎭 DEINE GEHEIME ROLLE: DER INTRIGANT</p>
+
+    <p style="color: #ffffff;">Im Traum siehst du das Gesicht von <strong>{target_name}</strong> vor dir. Alle negativen Emotionen, die du jemals dieser Person gegenüber empfunden hast, kochen in diesem Moment hoch. Du kannst diese Person nicht leiden – vielleicht aus einem bestimmten Grund, vielleicht einfach nur so.</p>
+
+    <p style="color: #ffffff;">Als du aufwachst, wird dir klar: <em>Bei der nächsten Gelegenheit schlage ich zu.</em></p>
+
+    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Hänge <strong>{target_name}</strong> den Mord an! Sammle Indizien, streue Gerüchte, lenke Verdächtigungen. Ob diese Person wirklich der Mörder ist oder nicht – es ist dir egal. Du willst {target_name} leiden sehen.</p>
+
+    <p style="color: #cccccc; font-style: italic;">Hinweis: Falls {target_name} zufällig tatsächlich der Mörder ist, umso besser – dann erreichst du dein Ziel mit der Wahrheit.</p>
+</div>
+"""
+
+LOVER_DREAM_TEMPLATE = """
+
+<div style="background: #4a0e4e; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff1493;">
+    <p style="color: #ff1493; font-weight: bold; font-size: 1.2em;">💕 DEINE GEHEIME ROLLE: DER/DIE VERLIEBTE</p>
+
+    <p style="color: #ffffff;">In deinem Traum erscheint <strong>{lover_name}</strong> – nicht bedrohlich, sondern warm, vertraut, anziehend. Ihr begegnet euch in einer verschneiten Landschaft, und plötzlich spürst du eine tiefe Verbundenheit, die du dir vorher nicht erklären konntest.</p>
+
+    <p style="color: #ffffff;">Als der Traum endet, bleibt dieses Gefühl. Du weißt intuitiv: <em>{lover_name} hat das Gleiche geträumt.</em></p>
+
+    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Ihr beide müsst überleben! Schützt euch gegenseitig, lenkt Verdächtigungen von {lover_name} ab, kommuniziert subtil. Ob einer von euch der Mörder ist oder nicht – spielt keine Rolle. Ihr gehört zusammen.</p>
+
+    <p style="color: #ffb3d9; font-style: italic;">Hinweis: Suche heute Vormittag nach Gelegenheiten, mit {lover_name} zu sprechen. Ein Blick, eine Geste – ihr werdet euch verstehen.</p>
+</div>
+"""
 
 
 # Phase-4-Text für Aufwachende (die beim ersten Schrei aufwachen)
@@ -263,7 +310,7 @@ AWAKENING_TEXT_TEMPLATE = """
 # ============================================================================
 
 game_state = {
-    "werewolf_id": None,        # ID des Werwolfs
+    "murder_id": None,           # ID des Mörders
     "victim": None,              # Dict mit Opfer-Informationen
     "num_players": None,         # Anzahl der aktiven Spieler (7-10)
     "active_characters": [],     # Liste der aktiven Charaktere (manuell/zufällig ausgewählt)
@@ -281,6 +328,10 @@ game_state = {
     "final_accused_id": None,    # Phase-5-Verdacht (nach Abstimmung)
     "final_verdict_correct": None,
     "votes": {},                 # Phase 5: Abstimmungen {char_id: voted_for_char_id}
+    "intrigant_id": None,        # ID des Intriganten (will jemandem den Mord anhängen)
+    "intrigant_target_id": None, # ID der Person, die der Intrigant belasten will
+    "desperate_id": None,        # ID der verzweifelten Person (will als Mörder identifiziert werden)
+    "lovers": [],                # Liste mit 2 IDs des verliebten Paars
     "voting_complete": False,    # Phase 5: True wenn alle abgestimmt haben
     "runoff_active": False,      # True wenn Stichwahl läuft
     "runoff_candidates": [],     # IDs der Kandidaten in der Stichwahl
@@ -314,11 +365,13 @@ def select_random_characters(num_players):
 
 def assign_random_letters(characters):
     """
-    Weist jedem Charakter zufällig einen Buchstaben A-J zu.
+    Weist jedem Charakter sequenziell einen Buchstaben zu (A, B, C, ...).
+    Bei 7 Spielern: A-G, bei 8 Spielern: A-H, bei 10 Spielern: A-J.
     Gibt ein Dictionary zurück: {char_id: "A", ...}
     """
     available_letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
-    selected_letters = random.sample(available_letters, len(characters))
+    # Nimm nur die ersten N Buchstaben basierend auf der Anzahl der Spieler
+    selected_letters = available_letters[:len(characters)]
 
     letter_mapping = {}
     for i, char in enumerate(characters):
@@ -376,7 +429,7 @@ def tally_votes_if_complete():
         game_state["runoff_round"] = 0
         game_state["voting_complete"] = True
         game_state["final_accused_id"] = winner_id
-        game_state["final_verdict_correct"] = (winner_id == game_state["werewolf_id"])
+        game_state["final_verdict_correct"] = (winner_id == game_state["murder_id"])
 
 def add_label_to_qr_image(qr_image, label_text):
     """
@@ -442,9 +495,11 @@ def replace_letter_placeholders(text, letter_mapping, active_characters):
     return re.sub(r'\[([A-J])\]', replace_match, text)
 
 def select_werewolf(characters, seed_tuple, victim):
-    """Wählt deterministisch-zufällig einen Werwolf mit Gewichtung basierend auf Motiven"""
-    # Seed basierend auf Event-Charakteren setzen
-    seed_value = hash(seed_tuple)
+    """Wählt deterministisch-zufällig einen Mörder mit Gewichtung basierend auf Motiven"""
+    # Besserer Seed mit SHA-256 für gleichmäßigere Verteilung
+    seed_string = str(seed_tuple) + "_werewolf"
+    seed_hash = hashlib.sha256(seed_string.encode()).hexdigest()
+    seed_value = int(seed_hash, 16) % (2**32)
     random.seed(seed_value)
 
     # Gewichte berechnen basierend auf MOTIVE_MATRIX
@@ -464,19 +519,22 @@ def select_werewolf(characters, seed_tuple, victim):
 def select_random_victim(seed_tuple):
     """Wählt deterministisch-zufällig eines der drei NPCs als Mordopfer basierend auf dem Event-Seed"""
     victims = list(NPCS.values())
-    seed_value = hash(seed_tuple)
+    # Besserer Seed mit SHA-256 für gleichmäßigere Verteilung
+    seed_string = str(seed_tuple) + "_victim"
+    seed_hash = hashlib.sha256(seed_string.encode()).hexdigest()
+    seed_value = int(seed_hash, 16) % (2**32)
     random.seed(seed_value)
     victim = random.choice(victims)
     random.seed()  # Seed zurücksetzen
     return victim
 
-def select_awakeners(active_characters, werewolf_id):
+def select_awakeners(active_characters, murder_id):
     """
     Wählt zufällig 2-3 Personen aus, die beim ersten Schrei aufwachen.
-    Der Werwolf wird ausgeschlossen.
+    Der Mörder wird ausgeschlossen.
     """
-    # Alle außer dem Werwolf
-    innocents = [char for char in active_characters if char["id"] != werewolf_id]
+    # Alle außer dem Mörder
+    innocents = [char for char in active_characters if char["id"] != murder_id]
 
     # Zufällig 2 oder 3 auswählen (falls genug Spieler vorhanden)
     max_awakeners = min(3, len(innocents))
@@ -486,22 +544,54 @@ def select_awakeners(active_characters, werewolf_id):
 
     return [char["id"] for char in awakeners]
 
+def select_special_roles(active_characters, murder_id, seed_tuple):
+    """
+    Wählt deterministisch-zufällig die speziellen Rollen:
+    - Intrigant (will jemandem den Mord anhängen)
+    - Verzweifelte Person (will als Mörder identifiziert werden)
+    - Verliebtes Paar (wollen gemeinsam überleben)
+
+    Alle außer dem Mörder können diese Rollen bekommen.
+    """
+    # Besserer Seed für spezielle Rollen
+    seed_string = str(seed_tuple) + "_special_roles"
+    seed_hash = hashlib.sha256(seed_string.encode()).hexdigest()
+    seed_value = int(seed_hash, 16) % (2**32)
+    random.seed(seed_value)
+
+    # Alle außer dem Mörder
+    innocents = [char for char in active_characters if char["id"] != murder_id]
+
+    # Sicherstellen, dass genug Spieler vorhanden sind (mindestens 5 für alle Rollen)
+    if len(innocents) < 5:
+        random.seed()
+        return None, None, None, []
+
+    # Mische die Unschuldigen
+    available = innocents.copy()
+    random.shuffle(available)
+
+    # 1. Intrigant + Ziel auswählen
+    intrigant = available.pop(0)
+    intrigant_target = available.pop(0)
+
+    # 2. Verzweifelte Person auswählen
+    desperate = available.pop(0)
+
+    # 3. Verliebtes Paar auswählen (2 Personen)
+    lover1 = available.pop(0)
+    lover2 = available.pop(0)
+
+    random.seed()  # Seed zurücksetzen
+
+    return intrigant["id"], intrigant_target["id"], desperate["id"], [lover1["id"], lover2["id"]]
+
 def determine_victim(first_event2, first_event1, first_event3, seed_tuple):
     """
-    Bestimmt das Opfer basierend auf der Matrix:
-    1. Erstes Ereignis 2 (Küchenhilfe) → Jonas Reber (Koch)
-    2. Sonst: Erstes Ereignis 1 (Klo) → Viktor Bergmann (Hotelier)
-    3. Sonst: Erstes Ereignis 3 (Alkohol) → Dimitri Volkov (Investor)
-    4. Sonst: Deterministisch-zufälliges Opfer basierend auf Event-Seed
+    Bestimmt das Opfer zufällig basierend auf dem Seed (Events + Wochentag).
+    Alle drei NPCs haben die gleiche Chance, unabhängig davon welche Events stattfanden.
     """
-    if first_event2 is not None:
-        return NPCS["kueche"]
-    elif first_event1 is not None:
-        return NPCS["klo"]
-    elif first_event3 is not None:
-        return NPCS["alkohol"]
-    else:
-        return select_random_victim(seed_tuple)
+    return select_random_victim(seed_tuple)
 
 def get_character_by_id(char_id):
     """Gibt den Charakter mit der angegebenen ID zurück"""
@@ -510,13 +600,13 @@ def get_character_by_id(char_id):
             return char
     return None
 
-def generate_motive_text(werewolf_id, victim):
-    """Gibt den passenden Motivsatz f?r Werwolf und Opfer zur?ck."""
+def generate_motive_text(murder_id, victim):
+    """Gibt den passenden Motivsatz für Mörder und Opfer zurück."""
     if not victim:
         return f"<p>{DEFAULT_MOTIVE_TEXT}</p>"
 
     victim_name = victim.get("name") if isinstance(victim, dict) else str(victim)
-    motive_sentence = MOTIVE_MATRIX.get(werewolf_id or 0, {}).get(victim_name)
+    motive_sentence = MOTIVE_MATRIX.get(murder_id or 0, {}).get(victim_name)
 
     if motive_sentence:
         return f"<p><strong>Motiv:</strong> {motive_sentence}</p>"
@@ -650,14 +740,23 @@ def admin():
             weekday = datetime.now().weekday()  # 0=Montag, 1=Dienstag, ..., 6=Sonntag
             seed_tuple = (first_event1, first_event2, first_event3, weekday)
 
-            # Opfer zuerst bestimmen (für gewichtete Werwolf-Auswahl)
+            # Opfer zuerst bestimmen (für gewichtete Mörder-Auswahl)
             active_chars = game_state["active_characters"]
             victim = determine_victim(first_event2, first_event1, first_event3, seed_tuple)
             game_state["victim"] = victim
 
-            # Werwolf mit Gewichtung basierend auf Motiv auswählen
-            game_state["werewolf_id"] = select_werewolf(active_chars, seed_tuple, victim)
-            game_state["awakeners"] = select_awakeners(active_chars, game_state["werewolf_id"])
+            # Mörder mit Gewichtung basierend auf Motiv auswählen
+            game_state["murder_id"] = select_werewolf(active_chars, seed_tuple, victim)
+            game_state["awakeners"] = select_awakeners(active_chars, game_state["murder_id"])
+
+            # Spezielle Rollen auswählen (Intrigant, Verzweifelte Person, Verliebtes Paar)
+            intrigant_id, intrigant_target_id, desperate_id, lovers = select_special_roles(
+                active_chars, game_state["murder_id"], seed_tuple
+            )
+            game_state["intrigant_id"] = intrigant_id
+            game_state["intrigant_target_id"] = intrigant_target_id
+            game_state["desperate_id"] = desperate_id
+            game_state["lovers"] = lovers
 
             # Spiel ist jetzt bereit für Phase 3
             reset_voting_state()
@@ -665,7 +764,13 @@ def admin():
             game_state["current_phase"] = 3  # Spieler können sich einloggen (Phase 3)
             game_state["game_started"] = True
 
-            success = f"Phase 3 gestartet! Spieler können sich jetzt einloggen und ihre Rollen sehen."
+            # QR-Codes automatisch generieren
+            try:
+                create_qr_codes_for_players()
+                success = f"Phase 3 gestartet! QR-Codes wurden generiert. Spieler können sich jetzt einloggen."
+            except Exception as e:
+                print(f"Fehler beim Generieren der QR-Codes: {e}")
+                success = f"Phase 3 gestartet! Achtung: QR-Codes konnten nicht automatisch generiert werden."
 
         # Phasen-Wechsel für Spieler (3->4->5)
         elif action == 'change_phase':
@@ -706,8 +811,8 @@ def player_view(slug):
         return render_template('error.html',
                              message="Ungültiger Spieler-Link. Bitte überprüfe die URL.")
 
-    # Prüfen, ob dieser Charakter der Werwolf ist
-    is_werewolf = (character["id"] == game_state["werewolf_id"])
+    # Prüfen, ob dieser Charakter der Mörder ist
+    is_werewolf = (character["id"] == game_state["murder_id"])
 
     # Prüfen, ob dieser Charakter beim ersten Schrei aufwacht
     is_awakener = character["id"] in game_state.get("awakeners", [])
@@ -734,18 +839,18 @@ def player_view(slug):
     # Abendverlauf für alle erstellen
     abendverlauf = f"<p><strong>Dein Abend:</strong></p><p>{phase3['nacht']}</p><p>{phase3['alibi']}</p>"
 
-    # Werwolf-Text mit Platzhaltern füllen
+    # Mörder-Text mit Platzhaltern füllen
     werewolf_text = None
     innocent_text = None
 
     if is_werewolf:
         # Motiv-Text generieren
         motive_text = generate_motive_text(
-            game_state["werewolf_id"],
+            game_state["murder_id"],
             game_state["victim"]
         )
 
-        # Werwolf-Text zusammensetzen
+        # Mörder-Text zusammensetzen
         werewolf_text = WEREWOLF_TEXT_TEMPLATE.format(
             abendverlauf=abendverlauf,
             victim_name=game_state["victim"]["name"],
@@ -754,16 +859,61 @@ def player_view(slug):
     else:
         # Unschuldigen-Text mit Traumsequenz
         dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
+
+        # Spezielle Rollen-Zusätze
+        special_role_text = ""
+
+        # Prüfe ob Intrigant
+        if character["id"] == game_state.get("intrigant_id"):
+            target_char = get_character_by_id(game_state.get("intrigant_target_id"))
+            if target_char:
+                target_name = target_char["name"]
+                special_role_text += INTRIGANT_DREAM_TEMPLATE.format(target_name=target_name)
+
+        # Prüfe ob Verzweifelter
+        if character["id"] == game_state.get("desperate_id"):
+            special_role_text += DESPERATE_DREAM_SUFFIX
+
+        # Prüfe ob Verliebter
+        if character["id"] in game_state.get("lovers", []):
+            lovers = game_state.get("lovers", [])
+            other_lover_id = [lid for lid in lovers if lid != character["id"]][0]
+            other_lover = get_character_by_id(other_lover_id)
+            if other_lover:
+                lover_name = other_lover["name"]
+                special_role_text += LOVER_DREAM_TEMPLATE.format(lover_name=lover_name)
+
         innocent_text = INNOCENT_TEXT_TEMPLATE.format(
             abendverlauf=abendverlauf,
-            dream_text=dream_text
+            dream_text=dream_text + special_role_text
         )
 
     # Aufwach-Text für Phase 4 erstellen (falls Aufwachender)
     awakening_text = None
     if is_awakener and not is_werewolf:
         dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
-        awakening_text = AWAKENING_TEXT_TEMPLATE.format(dream_text=dream_text)
+
+        # Spezielle Rollen-Zusätze auch für Awakeners
+        special_role_text = ""
+
+        if character["id"] == game_state.get("intrigant_id"):
+            target_char = get_character_by_id(game_state.get("intrigant_target_id"))
+            if target_char:
+                target_name = target_char["name"]
+                special_role_text += INTRIGANT_DREAM_TEMPLATE.format(target_name=target_name)
+
+        if character["id"] == game_state.get("desperate_id"):
+            special_role_text += DESPERATE_DREAM_SUFFIX
+
+        if character["id"] in game_state.get("lovers", []):
+            lovers = game_state.get("lovers", [])
+            other_lover_id = [lid for lid in lovers if lid != character["id"]][0]
+            other_lover = get_character_by_id(other_lover_id)
+            if other_lover:
+                lover_name = other_lover["name"]
+                special_role_text += LOVER_DREAM_TEMPLATE.format(lover_name=lover_name)
+
+        awakening_text = AWAKENING_TEXT_TEMPLATE.format(dream_text=dream_text + special_role_text)
 
     # Aktuelle Phase
     current_phase = game_state.get("current_phase", 0)
@@ -876,7 +1026,7 @@ def admin_random_votes():
 def reset_game():
     """Setzt das Spiel zurück (nur für Admin) und löscht alle QR-Codes"""
     # Spielzustand zurücksetzen
-    game_state["werewolf_id"] = None
+    game_state["murder_id"] = None
     game_state["victim"] = None
     game_state["num_players"] = None
     game_state["active_characters"] = []
@@ -921,17 +1071,23 @@ def get_local_ip():
         # Fallback auf localhost
         return "127.0.0.1"
 
-@app.route('/generate-qr-codes', methods=['POST'])
-def generate_qr_codes():
-    """Generiert QR-Codes als PNG-Dateien mit 300 DPI"""
-    if not game_state["game_started"]:
-        return redirect(url_for('admin'))
-
+def create_qr_codes_for_players():
+    """Helper-Funktion: Generiert QR-Codes für alle aktiven Spieler"""
     # QR-Code-Ordner erstellen
     qr_dir = os.path.join(os.getcwd(), 'qr_codes')
     os.makedirs(qr_dir, exist_ok=True)
 
-    # Nur f?r aktive Charaktere QR-Codes generieren
+    # Alte QR-Codes löschen bevor neue generiert werden
+    if os.path.exists(qr_dir):
+        try:
+            for filename in os.listdir(qr_dir):
+                file_path = os.path.join(qr_dir, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+        except Exception as e:
+            print(f"Fehler beim Löschen der alten QR-Codes: {e}")
+
+    # Nur für aktive Charaktere QR-Codes generieren
     active_chars = game_state.get("active_characters", CHARACTERS)
     letter_mapping = game_state.get("letter_mapping", {})
 
@@ -966,6 +1122,13 @@ def generate_qr_codes():
         # Als PNG speichern (Type-Checker-Warnung kann ignoriert werden)
         labeled_img.save(filepath)  # type: ignore
 
+@app.route('/generate-qr-codes', methods=['POST'])
+def generate_qr_codes():
+    """Generiert QR-Codes als PNG-Dateien mit 300 DPI"""
+    if not game_state["game_started"]:
+        return redirect(url_for('admin'))
+
+    create_qr_codes_for_players()
     return redirect(url_for('admin'))
 
 @app.route('/qr-codes')

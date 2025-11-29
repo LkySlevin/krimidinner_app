@@ -1,158 +1,217 @@
-{% extends "base.html" %}
-
-{% block title %}{{ character.name }} - Deine Rolle{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}{{ character.name }} - Deine Rolle{%
+endblock %} {% block content %}
 <h1>🎭 {{ character.name }}</h1>
 
 <!-- Phase-Anzeige -->
-<div style="background: #34495e; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-    <h3 style="color: #ecf0f1; margin: 0;">📍 Aktuelle Phase: {{ current_phase }}</h3>
+<div
+  style="
+    background: #34495e;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+  "
+>
+  <h3 style="color: #ecf0f1; margin: 0">
+    📍 Aktuelle Phase: {{ current_phase }}
+  </h3>
 </div>
 
 <!-- Phase 1-2: Nur Rolle anzeigen -->
 {% if current_phase >= 1 %}
-    <!-- Werwolf oder Unschuldig -->
-    {% if is_werewolf and werewolf_text %}
-        {{ werewolf_text | safe }}
-    {% elif not is_werewolf %}
-        {{ innocent_text | safe }}
-    {% endif %}
-{% endif %}
+<!-- Möder oder Unschuldig -->
+{% if is_werewolf and werewolf_text %} {{ werewolf_text | safe }} {% elif not
+is_werewolf %} {{ innocent_text | safe }} {% endif %} {% endif %}
 
-<!-- Phase 3: Nachtverhalten anzeigen (nur für Unschuldige, da Werwolf es bereits im Werwolf-Text hat) -->
+<!-- Phase 3: Nachtverhalten anzeigen (nur für Unschuldige, da Mörder es bereits im Mörder-Text hat) -->
 {% if current_phase >= 3 and not is_werewolf %}
-    <div class="phase3-info">
-        <h3>🌙 Dein Verhalten in der Nacht (Phase 3)</h3>
-        <p><strong>Was du getan hast:</strong></p>
-        <p>{{ phase3.nacht }}</p>
+<div class="phase3-info">
+  <h3>🌙 Dein Verhalten in der Nacht (Phase 3)</h3>
+  <p><strong>Was du getan hast:</strong></p>
+  <p>{{ phase3.nacht }}</p>
 
-        <p style="margin-top: 20px;"><strong>Deine Alibi-Information:</strong></p>
-        <p>{{ phase3.alibi }}</p>
-    </div>
+  <p style="margin-top: 20px"><strong>Deine Alibi-Information:</strong></p>
+  <p>{{ phase3.alibi }}</p>
+</div>
 {% endif %}
 
 <!-- Phase 4: Opfer-Informationen und Aufwach-Text -->
 {% if current_phase >= 4 %}
-    <!-- Opfer-Informationen -->
-    <div class="victim-info">
-        <h3>🔪 Das Opfer</h3>
-        <p><strong>Name:</strong> {{ victim.name }}</p>
-        <p><strong>Beruf:</strong> {{ victim.role }}</p>
-        <p><strong>Fundort:</strong> {{ victim.location }}</p>
-        <p style="margin-top: 15px; font-style: italic;">
-            Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role }},
-            in {{ victim.location }} gefunden. Ein schrecklicher Anblick...
-        </p>
-    </div>
+<!-- Opfer-Informationen -->
+<div class="victim-info">
+  <h3>🔪 Das Opfer</h3>
+  <p><strong>Name:</strong> {{ victim.name }}</p>
+  <p><strong>Beruf:</strong> {{ victim.role }}</p>
+  <p><strong>Fundort:</strong> {{ victim.location }}</p>
+  <p style="margin-top: 15px; font-style: italic">
+    Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role
+    }}, in {{ victim.location }} gefunden. Ein schrecklicher Anblick...
+  </p>
+</div>
 
-    <!-- Phase 4: Aufwach-Text (nur für die 2-3 Ausgewählten) -->
-    {% if awakening_text %}
-        {{ awakening_text | safe }}
-    {% endif %}
-{% endif %}
+<!-- Phase 4: Aufwach-Text (nur für die 2-3 Ausgewählten) -->
+{% if awakening_text %} {{ awakening_text | safe }} {% endif %} {% endif %}
 
 <!-- Phase 5: Abstimmung -->
 {% if current_phase >= 5 %}
-    <div style="background: #e74c3c; padding: 20px; border-radius: 8px; margin: 30px 0; border: 3px solid #c0392b;">
-        {% if runoff_active %}
-            <h2 style="color: #fff; margin-top: 0;">⚖️ Stichwahl - Runde {{ runoff_round }}</h2>
-            <div style="background: #f39c12; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                <p style="color: #fff; margin: 0; font-weight: bold;">
-                    🔄 Gleichstand! Es gab keine klare Mehrheit. Stimme erneut ab zwischen den Top-Kandidaten.
-                </p>
-            </div>
-        {% else %}
-            <h2 style="color: #fff; margin-top: 0;">⚖️ Phase 5: Abstimmung</h2>
-        {% endif %}
+<div
+  style="
+    background: #e74c3c;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 30px 0;
+    border: 3px solid #c0392b;
+  "
+>
+  {% if runoff_active %}
+  <h2 style="color: #fff; margin-top: 0">
+    ⚖️ Stichwahl - Runde {{ runoff_round }}
+  </h2>
+  <div
+    style="
+      background: #f39c12;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    "
+  >
+    <p style="color: #fff; margin: 0; font-weight: bold">
+      🔄 Gleichstand! Es gab keine klare Mehrheit. Stimme erneut ab zwischen den
+      Top-Kandidaten.
+    </p>
+  </div>
+  {% else %}
+  <h2 style="color: #fff; margin-top: 0">⚖️ Phase 5: Abstimmung</h2>
+  {% endif %} {% if has_voted %}
+  <div
+    style="
+      background: #27ae60;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+    "
+  >
+    <p style="color: #fff; margin: 0; font-size: 1.1em">
+      ✓ <strong>Du hast abgestimmt!</strong>
+    </p>
+    <p style="color: #fff; margin: 10px 0 0 0">
+      Warte, bis alle anderen Spieler ihre Stimme abgegeben haben.
+    </p>
+  </div>
 
-        {% if has_voted %}
-            <div style="background: #27ae60; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <p style="color: #fff; margin: 0; font-size: 1.1em;">
-                    ✓ <strong>Du hast abgestimmt!</strong>
-                </p>
-                <p style="color: #fff; margin: 10px 0 0 0;">
-                    Warte, bis alle anderen Spieler ihre Stimme abgegeben haben.
-                </p>
-            </div>
+  <!-- Auto-Refresh Script (nur wenn noch nicht alle abgestimmt haben) -->
+  {% if not voting_complete %}
+  <script>
+    // Auto-Refresh alle 10 Sekunden (wartet auf Ergebnis)
+    setTimeout(function () {
+      location.href = location.href;
+    }, 10000);
+  </script>
+  {% endif %}
 
-            <!-- Auto-Refresh Script (nur wenn noch nicht alle abgestimmt haben) -->
-            {% if not voting_complete %}
-                <script>
-                // Auto-Refresh alle 10 Sekunden (wartet auf Ergebnis)
-                setTimeout(function() {
-                    location.href = location.href;
-                }, 10000);
-                </script>
-            {% endif %}
+  <!-- Manueller Refresh Button -->
+  <button
+    onclick="location.href = location.href"
+    class="btn"
+    style="background: #3498db; width: 100%; margin-top: 15px; font-size: 1.1em"
+  >
+    🔄 Seite aktualisieren
+  </button>
+  {% else %}
+  <p style="color: #fff; font-size: 1.1em; margin-bottom: 20px">
+    <strong>Wähle die Person, die deiner Meinung nach der Mörder ist:</strong>
+  </p>
 
-            <!-- Manueller Refresh Button -->
-            <button onclick="location.href = location.href" class="btn" style="background: #3498db; width: 100%; margin-top: 15px; font-size: 1.1em;">
-                🔄 Seite aktualisieren
-            </button>
-        {% else %}
-            <p style="color: #fff; font-size: 1.1em; margin-bottom: 20px;">
-                <strong>Wähle die Person, die deiner Meinung nach der Mörder ist:</strong>
-            </p>
+  {% if runoff_active and runoff_candidates %}
+  <div
+    class="info-box"
+    style="
+      background: rgba(243, 156, 18, 0.2);
+      border-left-color: #f39c12;
+      color: #fff;
+    "
+  >
+    <strong>Nur diese Personen stehen jetzt zur Wahl:</strong>
+    <p style="margin-top: 8px">
+      {% for candidate_id in runoff_candidates %} {% set candidate =
+      active_characters|selectattr('id', 'equalto', candidate_id)|first %} {% if
+      candidate %} {% set letter = letter_mapping.get(candidate.id,
+      candidate.letter) %} {{ candidate.name }} [{{ letter }}]{% if not
+      loop.last %}, {% endif %} {% endif %} {% endfor %}
+    </p>
+  </div>
+  {% endif %}
 
-            {% if runoff_active and runoff_candidates %}
-                <div class="info-box" style="background: rgba(243, 156, 18, 0.2); border-left-color: #f39c12; color: #fff;">
-                    <strong>Nur diese Personen stehen jetzt zur Wahl:</strong>
-                    <p style="margin-top: 8px;">
-                        {% for candidate_id in runoff_candidates %}
-                            {% set candidate = active_characters|selectattr('id', 'equalto', candidate_id)|first %}
-                            {% if candidate %}
-                                {% set letter = letter_mapping.get(candidate.id, candidate.letter) %}
-                                {{ candidate.name }} [{{ letter }}]{% if not loop.last %}, {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                    </p>
-                </div>
-            {% endif %}
+  <form method="POST" action="{{ url_for('vote') }}">
+    <input type="hidden" name="voter_id" value="{{ character.id }}" />
 
-            <form method="POST" action="{{ url_for('vote') }}">
-                <input type="hidden" name="voter_id" value="{{ character.id }}">
-
-                <div style="background: #34495e; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                    {% for char in active_characters %}
-                        {% if char.id != character.id %}
-                            {% if not runoff_active or char.id in runoff_candidates %}
-                                {% set letter = letter_mapping.get(char.id, char.letter) %}
-                                <div style="margin: 10px 0;">
-                                    <label style="display: flex; align-items: center; cursor: pointer; color: #ecf0f1;">
-                                        <input type="radio" name="accused_id" value="{{ char.id }}"
-                                               required
-                                               style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
-                                        <span style="font-size: 1.1em;">{{ char.name }} [{{ letter }}]</span>
-                                    </label>
-                                </div>
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </div>
-
-                <button type="submit" class="btn" style="background: #e74c3c; width: 100%; font-size: 1.2em; padding: 15px;">
-                    🗳️ Stimme abgeben
-                </button>
-            </form>
-
-            <p style="color: #fff; margin-top: 15px; font-size: 0.9em; font-style: italic;">
-                ⚠️ Du kannst nicht für dich selbst stimmen. Wähle weise!
-            </p>
-        {% endif %}
+    <div
+      style="
+        background: #34495e;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+      "
+    >
+      {% for char in active_characters %} {% if char.id != character.id %} {% if
+      not runoff_active or char.id in runoff_candidates %} {% set letter =
+      letter_mapping.get(char.id, char.letter) %}
+      <div style="margin: 10px 0">
+        <label
+          style="
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: #ecf0f1;
+          "
+        >
+          <input
+            type="radio"
+            name="accused_id"
+            value="{{ char.id }}"
+            required
+            style="
+              margin-right: 10px;
+              width: 20px;
+              height: 20px;
+              cursor: pointer;
+            "
+          />
+          <span style="font-size: 1.1em">{{ char.name }} [{{ letter }}]</span>
+        </label>
+      </div>
+      {% endif %} {% endif %} {% endfor %}
     </div>
+
+    <button
+      type="submit"
+      class="btn"
+      style="background: #e74c3c; width: 100%; font-size: 1.2em; padding: 15px"
+    >
+      🗳️ Stimme abgeben
+    </button>
+  </form>
+
+  <p
+    style="color: #fff; margin-top: 15px; font-size: 0.9em; font-style: italic"
+  >
+    ⚠️ Du kannst nicht für dich selbst stimmen. Wähle weise!
+  </p>
+  {% endif %}
+</div>
 {% endif %}
 
 <div class="info-box">
-    <strong>📝 Hinweis:</strong> Nutze diese Informationen, um dich bei der Diskussion zu verteidigen
-    oder andere Spieler zu verdächtigen. Denke strategisch!
+  <strong>📝 Hinweis:</strong> Nutze diese Informationen, um dich bei der
+  Diskussion zu verteidigen oder andere Spieler zu verdächtigen. Denke
+  strategisch!
 </div>
 
-<div style="margin-top: 30px; text-align: center;">
-    <p style="color: #888; font-size: 0.9em;">
-        Teile diesen Link nicht mit anderen Spielern!<br>
-        Jeder hat seine eigene Rolle und Informationen.
-    </p>
+<div style="margin-top: 30px; text-align: center">
+  <p style="color: #888; font-size: 0.9em">
+    Teile diesen Link nicht mit anderen Spielern!<br />
+    Jeder hat seine eigene Rolle und Informationen.
+  </p>
 </div>
 
 {% endblock %}

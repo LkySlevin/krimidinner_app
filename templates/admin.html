@@ -1,381 +1,651 @@
-{% extends "base.html" %}
-
-{% block title %}Admin - Krimidinner{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Admin - Krimidinner{% endblock %} {%
+block content %}
 <h1>⚙️ Admin-Panel</h1>
 
 {% if error %}
-    <div class="alert alert-error">
-        <strong>❌ Fehler:</strong> {{ error }}
+<div class="alert alert-error"><strong>❌ Fehler:</strong> {{ error }}</div>
+{% endif %} {% if success %}
+<div class="alert alert-success"><strong>✓ Erfolg:</strong> {{ success }}</div>
+{% endif %} {# SETUP PHASE 0: Charakterauswahl #} {% if game_state.setup_phase
+== 0 %}
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 0</h3>
+  <p style="color: #fff; margin: 0">
+    <strong>1.</strong> Wähle die Charaktere aus,die am heutigen Spiel
+    teilnehmen (7-10 Personen).
+  </p>
+  <p style="color: #fff; margin-bottom: 10px">
+    <strong>2.</strong> Lies die Einleitung vor und lass die Leute sich
+    vorstellen.
+  </p>
+</div>
+
+<h2>Phase 1: Charaktere auswählen</h2>
+<p>Wähle 7-10 Charaktere aus, die am Spiel teilnehmen:</p>
+
+<form method="POST">
+  <input type="hidden" name="action" value="select_characters" />
+
+  <div
+    style="
+      background: #34495e;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    "
+  >
+    {% for char in characters %}
+    <div style="margin: 10px 0">
+      <label style="display: flex; align-items: center; cursor: pointer">
+        <input
+          type="checkbox"
+          name="characters"
+          value="{{ char.id }}"
+          style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer"
+        />
+        <span style="font-size: 1.1em">{{ char.name }}</span>
+      </label>
     </div>
-{% endif %}
+    {% endfor %}
+  </div>
 
-{% if success %}
-    <div class="alert alert-success">
-        <strong>✓ Erfolg:</strong> {{ success }}
+  <button type="submit" class="btn" style="background: #27ae60">
+    ➡️ Weiter zu Phase 2 (Ereignisse konfigurieren)
+  </button>
+</form>
+
+<div style="margin-top: 30px">
+  <a href="{{ url_for('index') }}" class="back-link">← Zurück zur Startseite</a>
+</div>
+
+{# SETUP PHASE 1: Event-Konfiguration #} {% elif game_state.setup_phase == 1 %}
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 1</h3>
+  <p style="color: #fff; margin: 0">
+    <strong>1.</strong> Lies den Text für Phase 1→2 vor und gib dann die
+    Ereignisse unten in der App an.
+  </p>
+  <p style="color: #fff; margin: 0">
+    <strong>2.</strong> Weise die Charaktere darauf hin ihren Aufgaben
+    nachzukommen.
+  </p>
+</div>
+
+<div class="alert alert-success">
+  <h3>{{ game_state.num_players }} Charaktere ausgewählt</h3>
+  <p>
+    <strong>Aktive Spieler:</strong>
+    {% for char in game_state.active_characters %} {% set letter =
+    game_state.letter_mapping.get(char.id, char.letter) %} {{ char.name }} ({{
+    letter }}){% if not loop.last %}, {% endif %} {% endfor %}
+  </p>
+</div>
+
+<h2>Phase 2: Ereignisse konfigurieren</h2>
+<p>Konfiguriere die drei Ereignisse und wer zuerst dabei war:</p>
+
+<form method="POST">
+  <input type="hidden" name="action" value="configure_events" />
+
+  <h3 style="margin-top: 30px">Ereignis-Namen (optional anpassen):</h3>
+
+  <div class="form-group">
+    <label for="event1_name">Ereignis 1 (Standard: Klo):</label>
+    <input type="text" name="event1_name" id="event1_name" placeholder="Klo" />
+  </div>
+
+  <div class="form-group">
+    <label for="event2_name">Ereignis 2 (Standard: Küchenhilfe):</label>
+    <input
+      type="text"
+      name="event2_name"
+      id="event2_name"
+      placeholder="Küchenhilfe"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="event3_name">Ereignis 3 (Standard: Alkohol):</label>
+    <input
+      type="text"
+      name="event3_name"
+      id="event3_name"
+      placeholder="Alkohol"
+    />
+  </div>
+
+  <h3 style="margin-top: 30px">Ereignisse zuweisen (optional):</h3>
+
+  <div class="form-group">
+    <label for="first_event1">Ereignis 1 - Wer war zuerst dabei?</label>
+    <select name="first_event1" id="first_event1">
+      <option value="">-- Bitte wählen (optional) --</option>
+      {% for char in game_state.active_characters %}
+      <option value="{{ char.id }}">{{ char.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="first_event2">Ereignis 2 - Wer war zuerst dabei?</label>
+    <select name="first_event2" id="first_event2">
+      <option value="">-- Bitte wählen (optional) --</option>
+      {% for char in game_state.active_characters %}
+      <option value="{{ char.id }}">{{ char.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="first_event3">Ereignis 3 - Wer war zuerst dabei?</label>
+    <select name="first_event3" id="first_event3">
+      <option value="">-- Bitte wählen (optional) --</option>
+      {% for char in game_state.active_characters %}
+      <option value="{{ char.id }}">{{ char.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button
+    type="submit"
+    class="btn"
+    style="background: #27ae60; margin-top: 30px"
+  >
+    ➡️ Phase 3 starten (Spieler können sich einloggen)
+  </button>
+</form>
+
+{# SETUP PHASE 2 / SPIELPHASE 3-4: Spiel läuft #} {% elif game_state.setup_phase
+== 2 and game_state.game_started %} {% if game_state.current_phase == 3 %}
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 3</h3>
+  <p style="color: #fff; margin: 0">
+    <strong>Lies den Text Phase 2→3 vor</strong> und bitte die Leute, den
+    QR-Code zu scannen, um sich weitere Instruktionen zu holen.
+  </p>
+</div>
+{% elif game_state.current_phase == 4 %}
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 4</h3>
+  <p style="color: #fff; margin: 0">
+    <strong>Lies den Mordfund-Text vor.</strong> Die Spieler sehen jetzt beim
+    Neuladen das Opfer und weitere Details.
+  </p>
+</div>
+{% elif game_state.current_phase == 5 %}
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 5</h3>
+  <p style="color: #fff; margin: 0">
+    <strong
+      >Lies den Text vor, dass endlich eine Entscheidung getroffen werden
+      soll.</strong
+    >
+  </p>
+  <p style="color: #fff; margin: 10px 0 0 0">
+    Die Spieler stimmen jetzt über ihre App ab. Warte, bis alle abgestimmt
+    haben.
+  </p>
+</div>
+
+<!-- Abstimmungsfortschritt -->
+<div
+  style="
+    background: #9b59b6;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    color: #fff;
+  "
+>
+  <h3 style="margin-top: 0">🗳️ Abstimmungsfortschritt</h3>
+
+  {% set total_players = game_state.num_players %} {% set votes_cast =
+  game_state.votes|length %} {% set progress_percent = (votes_cast /
+  total_players * 100)|int if total_players > 0 else 0 %}
+
+  <div
+    style="
+      background: #34495e;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 15px 0;
+    "
+  >
+    <div
+      style="background: #27ae60; height: 30px; width: {{ progress_percent }}%; transition: width 0.3s;"
+    ></div>
+  </div>
+
+  <p style="font-size: 1.3em; margin: 10px 0">
+    <strong>{{ votes_cast }} / {{ total_players }}</strong> Spieler haben
+    abgestimmt
+  </p>
+
+  <h4 style="margin-top: 20px">Wer hat abgestimmt:</h4>
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    "
+  >
+    {% for char in game_state.active_characters %} {% set letter =
+    game_state.letter_mapping.get(char.id, char.letter) %} {% set has_voted =
+    char.id in game_state.votes %}
+    <div
+      style="background: {{ '#27ae60' if has_voted else '#7f8c8d' }}; padding: 10px; border-radius: 5px; text-align: center;"
+    >
+      {{ '✓' if has_voted else '○' }} {{ char.name }} [{{ letter }}]
     </div>
-{% endif %}
+    {% endfor %}
+  </div>
 
-{# SETUP PHASE 0: Charakterauswahl #}
-{% if game_state.setup_phase == 0 %}
-    <div style="background: #e67e22; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #d35400;">
-        <h3 style="margin-top: 0; color: #fff;">📋 Spielleiter-Anweisung: Phase 0</h3>
-        <p style="color: #fff; margin: 0;"><strong>1.</strong> Wähle die Charaktere aus,die am heutigen Spiel teilnehmen (7-10 Personen).</p>
-        <p style="color: #fff; margin-bottom: 10px;"><strong>2.</strong> Lies die Einleitung vor und lass die Leute sich vorstellen.</p>
-    </div>
+  {% if game_state.voting_complete %}
+  <div
+    style="
+      background: #27ae60;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    "
+  >
+    <p style="margin: 0; font-size: 1.2em">
+      <strong>✓ Alle haben abgestimmt!</strong>
+    </p>
+    <p style="margin: 10px 0 0 0">
+      Scrolle nach unten, um das Ergebnis zu sehen.
+    </p>
+  </div>
+  {% endif %}
 
-    <h2>Phase 1: Charaktere auswählen</h2>
-    <p>Wähle 7-10 Charaktere aus, die am Spiel teilnehmen:</p>
+  <!-- Auto-Refresh Script (nur wenn Abstimmung läuft) -->
+  {% if not game_state.voting_complete %}
+  <script>
+    // Auto-Refresh alle 10 Sekunden
+    setTimeout(function () {
+      location.href = location.href;
+    }, 10000);
+  </script>
+  {% endif %}
 
-    <form method="POST">
-        <input type="hidden" name="action" value="select_characters">
+  <!-- Manueller Refresh Button -->
+  <div style="text-align: center; margin: 15px 0">
+    <button
+      onclick="location.href = location.href"
+      class="btn"
+      style="background: #3498db; font-size: 0.95em"
+    >
+      🔄 Seite aktualisieren
+    </button>
+  </div>
 
-        <div style="background: #34495e; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            {% for char in characters %}
-                <div style="margin: 10px 0;">
-                    <label style="display: flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" name="characters" value="{{ char.id }}"
-                               style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer;">
-                        <span style="font-size: 1.1em;">{{ char.name }}</span>
-                    </label>
-                </div>
-            {% endfor %}
-        </div>
+  <!-- Testing & Debug Buttons -->
+  <div
+    style="
+      background: rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+    "
+  >
+    <h4 style="margin-top: 0">🔧 Testing & Debug</h4>
 
-        <button type="submit" class="btn" style="background: #27ae60;">
-            ➡️ Weiter zu Phase 2 (Ereignisse konfigurieren)
-        </button>
+    {% if not game_state.voting_complete %}
+    <form
+      method="POST"
+      action="{{ url_for('admin_random_votes') }}"
+      style="display: inline-block; margin-right: 10px"
+    >
+      <button
+        type="submit"
+        class="btn"
+        style="background: #f39c12; font-size: 0.95em"
+      >
+        🎲 Zufällig abstimmen (fehlende Stimmen)
+      </button>
     </form>
-
-    <div style="margin-top: 30px;">
-        <a href="{{ url_for('index') }}" class="back-link">← Zurück zur Startseite</a>
-    </div>
-
-{# SETUP PHASE 1: Event-Konfiguration #}
-{% elif game_state.setup_phase == 1 %}
-    <div style="background: #e67e22; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #d35400;">
-        <h3 style="margin-top: 0; color: #fff;">📋 Spielleiter-Anweisung: Phase 1</h3>
-        <p style="color: #fff; margin: 0;"><strong>1.</strong> Lies den Text für Phase 1→2 vor und gib dann die Ereignisse unten in der App an.</p>
-        <p style="color: #fff; margin: 0;"><strong>2.</strong> Weise die Charaktere darauf hin ihren Aufgaben nachzukommen.</p>
-    </div>
-
-    <div class="alert alert-success">
-        <h3>{{ game_state.num_players }} Charaktere ausgewählt</h3>
-        <p><strong>Aktive Spieler:</strong>
-        {% for char in game_state.active_characters %}
-            {% set letter = game_state.letter_mapping.get(char.id, char.letter) %}
-            {{ char.name }} ({{ letter }}){% if not loop.last %}, {% endif %}
-        {% endfor %}
-        </p>
-    </div>
-
-    <h2>Phase 2: Ereignisse konfigurieren</h2>
-    <p>Konfiguriere die drei Ereignisse und wer zuerst dabei war:</p>
-
-    <form method="POST">
-        <input type="hidden" name="action" value="configure_events">
-
-        <h3 style="margin-top: 30px;">Ereignis-Namen (optional anpassen):</h3>
-
-        <div class="form-group">
-            <label for="event1_name">Ereignis 1 (Standard: Klo):</label>
-            <input type="text" name="event1_name" id="event1_name" placeholder="Klo">
-        </div>
-
-        <div class="form-group">
-            <label for="event2_name">Ereignis 2 (Standard: Küchenhilfe):</label>
-            <input type="text" name="event2_name" id="event2_name" placeholder="Küchenhilfe">
-        </div>
-
-        <div class="form-group">
-            <label for="event3_name">Ereignis 3 (Standard: Alkohol):</label>
-            <input type="text" name="event3_name" id="event3_name" placeholder="Alkohol">
-        </div>
-
-        <h3 style="margin-top: 30px;">Ereignisse zuweisen (optional):</h3>
-
-        <div class="form-group">
-            <label for="first_event1">Ereignis 1 - Wer war zuerst dabei?</label>
-            <select name="first_event1" id="first_event1">
-                <option value="">-- Bitte wählen (optional) --</option>
-                {% for char in game_state.active_characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="first_event2">Ereignis 2 - Wer war zuerst dabei?</label>
-            <select name="first_event2" id="first_event2">
-                <option value="">-- Bitte wählen (optional) --</option>
-                {% for char in game_state.active_characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="first_event3">Ereignis 3 - Wer war zuerst dabei?</label>
-            <select name="first_event3" id="first_event3">
-                <option value="">-- Bitte wählen (optional) --</option>
-                {% for char in game_state.active_characters %}
-                    <option value="{{ char.id }}">{{ char.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <button type="submit" class="btn" style="background: #27ae60; margin-top: 30px;">
-            ➡️ Phase 3 starten (Spieler können sich einloggen)
-        </button>
-    </form>
-
-{# SETUP PHASE 2 / SPIELPHASE 3-4: Spiel läuft #}
-{% elif game_state.setup_phase == 2 and game_state.game_started %}
-    {% if game_state.current_phase == 3 %}
-        <div style="background: #e67e22; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #d35400;">
-            <h3 style="margin-top: 0; color: #fff;">📋 Spielleiter-Anweisung: Phase 3</h3>
-            <p style="color: #fff; margin: 0;"><strong>Lies den Text Phase 2→3 vor</strong> und bitte die Leute, den QR-Code zu scannen, um sich weitere Instruktionen zu holen.</p>
-        </div>
-    {% elif game_state.current_phase == 4 %}
-        <div style="background: #e67e22; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #d35400;">
-            <h3 style="margin-top: 0; color: #fff;">📋 Spielleiter-Anweisung: Phase 4</h3>
-            <p style="color: #fff; margin: 0;"><strong>Lies den Mordfund-Text vor.</strong> Die Spieler sehen jetzt beim Neuladen das Opfer und weitere Details.</p>
-        </div>
-    {% elif game_state.current_phase == 5 %}
-        <div style="background: #e67e22; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #d35400;">
-            <h3 style="margin-top: 0; color: #fff;">📋 Spielleiter-Anweisung: Phase 5</h3>
-            <p style="color: #fff; margin: 0;"><strong>Lies den Text vor, dass endlich eine Entscheidung getroffen werden soll.</strong></p>
-            <p style="color: #fff; margin: 10px 0 0 0;">Die Spieler stimmen jetzt über ihre App ab. Warte, bis alle abgestimmt haben.</p>
-        </div>
-
-        <!-- Abstimmungsfortschritt -->
-        <div style="background: #9b59b6; padding: 20px; border-radius: 8px; margin: 20px 0; color: #fff;">
-            <h3 style="margin-top: 0;">🗳️ Abstimmungsfortschritt</h3>
-
-            {% set total_players = game_state.num_players %}
-            {% set votes_cast = game_state.votes|length %}
-            {% set progress_percent = (votes_cast / total_players * 100)|int if total_players > 0 else 0 %}
-
-            <div style="background: #34495e; border-radius: 10px; overflow: hidden; margin: 15px 0;">
-                <div style="background: #27ae60; height: 30px; width: {{ progress_percent }}%; transition: width 0.3s;">
-                </div>
-            </div>
-
-            <p style="font-size: 1.3em; margin: 10px 0;"><strong>{{ votes_cast }} / {{ total_players }}</strong> Spieler haben abgestimmt</p>
-
-            <h4 style="margin-top: 20px;">Wer hat abgestimmt:</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px;">
-                {% for char in game_state.active_characters %}
-                    {% set letter = game_state.letter_mapping.get(char.id, char.letter) %}
-                    {% set has_voted = char.id in game_state.votes %}
-                    <div style="background: {{ '#27ae60' if has_voted else '#7f8c8d' }}; padding: 10px; border-radius: 5px; text-align: center;">
-                        {{ '✓' if has_voted else '○' }} {{ char.name }} [{{ letter }}]
-                    </div>
-                {% endfor %}
-            </div>
-
-            {% if game_state.voting_complete %}
-                <div style="background: #27ae60; padding: 15px; border-radius: 5px; margin-top: 20px;">
-                    <p style="margin: 0; font-size: 1.2em;"><strong>✓ Alle haben abgestimmt!</strong></p>
-                    <p style="margin: 10px 0 0 0;">Scrolle nach unten, um das Ergebnis zu sehen.</p>
-                </div>
-            {% endif %}
-
-            <!-- Auto-Refresh Script (nur wenn Abstimmung läuft) -->
-            {% if not game_state.voting_complete %}
-                <script>
-                // Auto-Refresh alle 10 Sekunden
-                setTimeout(function() {
-                    location.href = location.href;
-                }, 10000);
-                </script>
-            {% endif %}
-
-            <!-- Manueller Refresh Button -->
-            <div style="text-align: center; margin: 15px 0;">
-                <button onclick="location.href = location.href" class="btn" style="background: #3498db; font-size: 0.95em;">
-                    🔄 Seite aktualisieren
-                </button>
-            </div>
-
-            <!-- Testing & Debug Buttons -->
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin-top: 20px; border: 2px dashed rgba(255,255,255,0.3);">
-                <h4 style="margin-top: 0;">🔧 Testing & Debug</h4>
-
-                {% if not game_state.voting_complete %}
-                    <form method="POST" action="{{ url_for('admin_random_votes') }}" style="display: inline-block; margin-right: 10px;">
-                        <button type="submit" class="btn" style="background: #f39c12; font-size: 0.95em;">
-                            🎲 Zufällig abstimmen (fehlende Stimmen)
-                        </button>
-                    </form>
-                {% endif %}
-
-                <button onclick="toggleVoteDetails()" class="btn" style="background: #3498db; font-size: 0.95em;">
-                    👁️ Vote-Details anzeigen/verstecken
-                </button>
-
-                <div id="vote-details" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; margin-top: 15px;">
-                    <h4 style="margin-top: 0;">📊 Detaillierte Abstimmung:</h4>
-                    {% if game_state.votes %}
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: rgba(0,0,0,0.3);">
-                                    <th style="padding: 10px; text-align: left; border: 1px solid rgba(255,255,255,0.2);">Wähler</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid rgba(255,255,255,0.2);">Stimme für</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for voter_id, accused_id in game_state.votes.items() %}
-                                    {% set voter = game_state.active_characters|selectattr('id', 'equalto', voter_id)|first %}
-                                    {% set accused = game_state.active_characters|selectattr('id', 'equalto', accused_id)|first %}
-                                    {% set voter_letter = game_state.letter_mapping.get(voter_id, '') %}
-                                    {% set accused_letter = game_state.letter_mapping.get(accused_id, '') %}
-                                    <tr>
-                                        <td style="padding: 10px; border: 1px solid rgba(255,255,255,0.2);">
-                                            {{ voter.name }} [{{ voter_letter }}]
-                                        </td>
-                                        <td style="padding: 10px; border: 1px solid rgba(255,255,255,0.2);">
-                                            → {{ accused.name }} [{{ accused_letter }}]
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p style="color: #bdc3c7; font-style: italic;">Noch keine Stimmen abgegeben.</p>
-                    {% endif %}
-                </div>
-
-                <script>
-                function toggleVoteDetails() {
-                    var details = document.getElementById('vote-details');
-                    if (details.style.display === 'none') {
-                        details.style.display = 'block';
-                    } else {
-                        details.style.display = 'none';
-                    }
-                }
-                </script>
-            </div>
-        </div>
     {% endif %}
 
-    <div class="alert alert-success">
-        <h3>Spiel läuft mit {{ game_state.num_players }} Spielern!</h3>
+    <button
+      onclick="toggleVoteDetails()"
+      class="btn"
+      style="background: #3498db; font-size: 0.95em"
+    >
+      👁️ Vote-Details anzeigen/verstecken
+    </button>
 
-        <p><strong>Aktuelle Spielphase:</strong> {{ game_state.current_phase }}</p>
-
-        <p><strong>Aller Personen scannen ihre QR Codes </strong></p>
-
-        <p style="margin-top: 15px;"><strong>Aktive Spieler:</strong>
-        {% for char in game_state.active_characters %}
-            {% set letter = game_state.letter_mapping.get(char.id, char.letter) %}
-            {{ char.name }} ({{ letter }}){% if not loop.last %}, {% endif %}
-        {% endfor %}
-        </p>
+    <div
+      id="vote-details"
+      style="
+        display: none;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 15px;
+      "
+    >
+      <h4 style="margin-top: 0">📊 Detaillierte Abstimmung:</h4>
+      {% if game_state.votes %}
+      <table style="width: 100%; border-collapse: collapse">
+        <thead>
+          <tr style="background: rgba(0, 0, 0, 0.3)">
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+              "
+            >
+              Wähler
+            </th>
+            <th
+              style="
+                padding: 10px;
+                text-align: left;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+              "
+            >
+              Stimme für
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for voter_id, accused_id in game_state.votes.items() %} {% set
+          voter = game_state.active_characters|selectattr('id', 'equalto',
+          voter_id)|first %} {% set accused =
+          game_state.active_characters|selectattr('id', 'equalto',
+          accused_id)|first %} {% set voter_letter =
+          game_state.letter_mapping.get(voter_id, '') %} {% set accused_letter =
+          game_state.letter_mapping.get(accused_id, '') %}
+          <tr>
+            <td
+              style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2)"
+            >
+              {{ voter.name }} [{{ voter_letter }}]
+            </td>
+            <td
+              style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2)"
+            >
+              → {{ accused.name }} [{{ accused_letter }}]
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color: #bdc3c7; font-style: italic">
+        Noch keine Stimmen abgegeben.
+      </p>
+      {% endif %}
     </div>
 
-    <!-- Phasen-Steuerung -->
-    {% if game_state.current_phase < 5 %}
-        <div style="background: #34495e; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #ecf0f1;">🎮 Spielphasen-Steuerung</h3>
-            <p style="color: #bdc3c7;">Wechsle zwischen den Phasen. Spieler sehen beim Neuladen ihrer Seite die neuen Inhalte.</p>
-
-            <form method="POST" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
-                <input type="hidden" name="action" value="change_phase">
-
-                {% set phase_color_3 = '#27ae60' if game_state.current_phase == 3 else '#7f8c8d' %}
-                {% set phase_color_4 = '#27ae60' if game_state.current_phase == 4 else '#7f8c8d' %}
-                {% set phase_color_5 = '#27ae60' if game_state.current_phase == 5 else '#7f8c8d' %}
-
-                <button type="submit" name="phase" value="3" class="btn" style="background: {{ phase_color_3 }};">
-                    Phase 3 (Rollen)
-                </button>
-
-                <button type="submit" name="phase" value="4" class="btn" style="background: {{ phase_color_4 }};">
-                    Phase 4 (Opfer-Reveal)
-                </button>
-
-                <button type="submit" name="phase" value="5" class="btn" style="background: {{ phase_color_5 }};">
-                    Phase 5 (Abstimmung)
-                </button>
-            </form>
-        </div>
-    {% else %}
-        <div style="background: #e74c3c; padding: 20px; border-radius: 8px; margin: 20px 0; color: #fff;">
-            <h3 style="margin-top: 0;">🔒 Phase 5 aktiv - Abstimmung läuft</h3>
-            <p style="margin: 0;">Du kannst nicht mehr zu vorherigen Phasen zurückkehren. Warte, bis alle Spieler abgestimmt haben.</p>
-        </div>
-    {% endif %}
-
-    <!-- Abstimmungsergebnis (nur wenn Abstimmung abgeschlossen) -->
-    {% if game_state.voting_complete and game_state.final_accused_id %}
-        {% set accused_char = characters|selectattr('id', 'equalto', game_state.final_accused_id)|first %}
-        {% set accused_letter = game_state.letter_mapping.get(game_state.final_accused_id, accused_char.letter if accused_char else '?') %}
-        {% set is_correct = game_state.final_verdict_correct %}
-
-        <div style="background: {{ '#27ae60' if is_correct else '#e74c3c' }}; padding: 25px; border-radius: 8px; margin: 30px 0; color: #fff; border: 5px solid {{ '#1e8449' if is_correct else '#922b21' }};">
-            <h2 style="margin-top: 0; font-size: 2em;">⚖️ Abstimmungsergebnis</h2>
-
-            <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 5px; margin: 20px 0;">
-                <h3 style="margin-top: 0;">Die Gruppe hat entschieden:</h3>
-                <p style="font-size: 1.5em; margin: 10px 0;">
-                    <strong>{{ accused_char.name if accused_char else 'Unbekannt' }} [{{ accused_letter }}]</strong>
-                </p>
-            </div>
-
-            {% if is_correct %}
-                <div style="font-size: 1.2em; margin: 20px 0;">
-                    <p><strong>✅ RICHTIG!</strong></p>
-                    <p>Der wahre Werwolf wurde identifiziert und zur Rechenschaft gezogen.</p>
-                    <p style="margin-top: 15px;">Nach wenigen Minuten ist alles vorbei. Der Schrecken scheint endgültig besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit ins Grab und hoffen auf einen ruhigen Schlaf.</p>
-                </div>
-            {% else %}
-                <div style="font-size: 1.2em; margin: 20px 0;">
-                    <p><strong>❌ FALSCH!</strong></p>
-                    <p>Die Gruppe hat sich geirrt. Ein Unschuldiger wurde verurteilt.</p>
-                    {% set werewolf_char = characters|selectattr('id', 'equalto', game_state.werewolf_id)|first %}
-                    {% set werewolf_letter = game_state.letter_mapping.get(game_state.werewolf_id, werewolf_char.letter if werewolf_char else '?') %}
-                    <p style="margin-top: 15px;">Der wahre Werwolf war: <strong>{{ werewolf_char.name if werewolf_char else 'Unbekannt' }} [{{ werewolf_letter }}]</strong></p>
-                    <p style="margin-top: 15px;">Nach wenigen Minuten ist alles vorbei. Doch es war die falsche Person. Trotzdem schlafen alle den Schlaf der Gerechten – bis ein weiterer Schrei die vollmondhelle Nacht durchhallt.</p>
-                </div>
-            {% endif %}
-
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; margin-top: 20px;">
-                <h4 style="margin-top: 0;">📊 Stimmenverteilung:</h4>
-                {% set vote_counts = {} %}
-                {% for voter_id, voted_for_id in game_state.votes.items() %}
-                    {% if vote_counts.update({voted_for_id: vote_counts.get(voted_for_id, 0) + 1}) %}{% endif %}
-                {% endfor %}
-
-                {% for char in game_state.active_characters %}
-                    {% set votes_received = game_state.votes.values()|select('equalto', char.id)|list|length %}
-                    {% if votes_received > 0 %}
-                        {% set letter = game_state.letter_mapping.get(char.id, char.letter) %}
-                        <p style="margin: 5px 0;">{{ char.name }} [{{ letter }}]: <strong>{{ votes_received }} Stimme(n)</strong></p>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
-
-    <div style="margin: 20px 0;">
-        <a href="{{ url_for('victim_reveal') }}" class="btn" style="background: #c0392b;">🔴 Opfer anzeigen (Phase 4)</a>
-        <a href="{{ url_for('qr_codes') }}" class="btn">📱 QR-Codes & Links anzeigen</a>
-
-        <form method="POST" action="{{ url_for('generate_qr_codes') }}" style="display: inline;">
-            <button type="submit" class="btn" style="background: #27ae60;">💾 QR-Codes generieren (PNG)</button>
-        </form>
-
-        <a href="{{ url_for('index') }}" class="btn btn-secondary">🏠 Zur Startseite</a>
-    </div>
-
-    <form method="POST" action="{{ url_for('reset_game') }}" style="margin-top: 30px;">
-        <button type="submit" class="btn" onclick="return confirm('Willst du das Spiel wirklich zurücksetzen?')">
-            🔄 Spiel zurücksetzen
-        </button>
-    </form>
+    <script>
+      function toggleVoteDetails() {
+        var details = document.getElementById("vote-details");
+        if (details.style.display === "none") {
+          details.style.display = "block";
+        } else {
+          details.style.display = "none";
+        }
+      }
+    </script>
+  </div>
+</div>
 {% endif %}
 
-{% endblock %}
+<div class="alert alert-success">
+  <h3>Spiel läuft mit {{ game_state.num_players }} Spielern!</h3>
+
+  <p><strong>Aktuelle Spielphase:</strong> {{ game_state.current_phase }}</p>
+
+  <p><strong>Aller Personen scannen ihre QR Codes </strong></p>
+
+  <p style="margin-top: 15px">
+    <strong>Aktive Spieler:</strong>
+    {% for char in game_state.active_characters %} {% set letter =
+    game_state.letter_mapping.get(char.id, char.letter) %} {{ char.name }} ({{
+    letter }}){% if not loop.last %}, {% endif %} {% endfor %}
+  </p>
+</div>
+
+<!-- Phasen-Steuerung -->
+{% if game_state.current_phase < 5 %}
+<div
+  style="background: #34495e; padding: 20px; border-radius: 8px; margin: 20px 0"
+>
+  <h3 style="color: #ecf0f1">🎮 Spielphasen-Steuerung</h3>
+  <p style="color: #bdc3c7">
+    Wechsle zwischen den Phasen. Spieler sehen beim Neuladen ihrer Seite die
+    neuen Inhalte.
+  </p>
+
+  <form
+    method="POST"
+    style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px"
+  >
+    <input type="hidden" name="action" value="change_phase" />
+
+    {% set phase_color_3 = '#27ae60' if game_state.current_phase == 3 else
+    '#7f8c8d' %} {% set phase_color_4 = '#27ae60' if game_state.current_phase ==
+    4 else '#7f8c8d' %} {% set phase_color_5 = '#27ae60' if
+    game_state.current_phase == 5 else '#7f8c8d' %}
+
+    <button
+      type="submit"
+      name="phase"
+      value="3"
+      class="btn"
+      style="background: {{ phase_color_3 }};"
+    >
+      Phase 3 (Rollen)
+    </button>
+
+    <button
+      type="submit"
+      name="phase"
+      value="4"
+      class="btn"
+      style="background: {{ phase_color_4 }};"
+    >
+      Phase 4 (Opfer-Reveal)
+    </button>
+
+    <button
+      type="submit"
+      name="phase"
+      value="5"
+      class="btn"
+      style="background: {{ phase_color_5 }};"
+    >
+      Phase 5 (Abstimmung)
+    </button>
+  </form>
+</div>
+{% else %}
+<div
+  style="
+    background: #e74c3c;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    color: #fff;
+  "
+>
+  <h3 style="margin-top: 0">🔒 Phase 5 aktiv - Abstimmung läuft</h3>
+  <p style="margin: 0">
+    Du kannst nicht mehr zu vorherigen Phasen zurückkehren. Warte, bis alle
+    Spieler abgestimmt haben.
+  </p>
+</div>
+{% endif %}
+
+<!-- Abstimmungsergebnis (nur wenn Abstimmung abgeschlossen) -->
+{% if game_state.voting_complete and game_state.final_accused_id %} {% set
+accused_char = characters|selectattr('id', 'equalto',
+game_state.final_accused_id)|first %} {% set accused_letter =
+game_state.letter_mapping.get(game_state.final_accused_id, accused_char.letter
+if accused_char else '?') %} {% set is_correct =
+game_state.final_verdict_correct %}
+
+<div
+  style="background: {{ '#27ae60' if is_correct else '#e74c3c' }}; padding: 25px; border-radius: 8px; margin: 30px 0; color: #fff; border: 5px solid {{ '#1e8449' if is_correct else '#922b21' }};"
+>
+  <h2 style="margin-top: 0; font-size: 2em">⚖️ Abstimmungsergebnis</h2>
+
+  <div
+    style="
+      background: rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+    "
+  >
+    <h3 style="margin-top: 0">Die Gruppe hat entschieden:</h3>
+    <p style="font-size: 1.5em; margin: 10px 0">
+      <strong
+        >{{ accused_char.name if accused_char else 'Unbekannt' }} [{{
+        accused_letter }}]</strong
+      >
+    </p>
+  </div>
+
+  {% if is_correct %}
+  <div style="font-size: 1.2em; margin: 20px 0">
+    <p><strong>✅ RICHTIG!</strong></p>
+    <p>Der wahre Mörder wurde identifiziert und zur Rechenschaft gezogen.</p>
+    <p style="margin-top: 15px">
+      Nach wenigen Minuten ist alles vorbei. Der Schrecken scheint endgültig
+      besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit
+      ins Grab und hoffen auf einen ruhigen Schlaf.
+    </p>
+  </div>
+  {% else %}
+  <div style="font-size: 1.2em; margin: 20px 0">
+    <p><strong>❌ FALSCH!</strong></p>
+    <p>Die Gruppe hat sich geirrt. Ein Unschuldiger wurde verurteilt.</p>
+    {% set murder_char = characters|selectattr('id', 'equalto',
+    game_state.murder_id)|first %} {% set werewolf_letter =
+    game_state.letter_mapping.get(game_state.murder_id, murder_char.letter if
+    murder_char else '?') %}
+    <p style="margin-top: 15px">
+      Der wahre Mörder war:
+      <strong
+        >{{ murder_char.name if murder_char else 'Unbekannt' }} [{{
+        werewolf_letter }}]</strong
+      >
+    </p>
+    <p style="margin-top: 15px">
+      Nach wenigen Minuten ist alles vorbei. Doch es war die falsche Person.
+      Trotzdem schlafen alle den Schlaf der Gerechten – bis ein weiterer Schrei
+      die vollmondhelle Nacht durchhallt.
+    </p>
+  </div>
+  {% endif %}
+
+  <div
+    style="
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    "
+  >
+    <h4 style="margin-top: 0">📊 Stimmenverteilung:</h4>
+    {% set vote_counts = {} %} {% for voter_id, voted_for_id in
+    game_state.votes.items() %} {% if vote_counts.update({voted_for_id:
+    vote_counts.get(voted_for_id, 0) + 1}) %}{% endif %} {% endfor %} {% for
+    char in game_state.active_characters %} {% set votes_received =
+    game_state.votes.values()|select('equalto', char.id)|list|length %} {% if
+    votes_received > 0 %} {% set letter = game_state.letter_mapping.get(char.id,
+    char.letter) %}
+    <p style="margin: 5px 0">
+      {{ char.name }} [{{ letter }}]:
+      <strong>{{ votes_received }} Stimme(n)</strong>
+    </p>
+    {% endif %} {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div style="margin: 20px 0">
+  <a
+    href="{{ url_for('victim_reveal') }}"
+    class="btn"
+    style="background: #c0392b"
+    >🔴 Opfer anzeigen (Phase 4)</a
+  >
+  <a href="{{ url_for('qr_codes') }}" class="btn"
+    >📱 QR-Codes & Links anzeigen</a
+  >
+
+  <form
+    method="POST"
+    action="{{ url_for('generate_qr_codes') }}"
+    style="display: inline"
+  >
+    <button type="submit" class="btn" style="background: #27ae60">
+      💾 QR-Codes generieren (PNG)
+    </button>
+  </form>
+
+  <a href="{{ url_for('index') }}" class="btn btn-secondary"
+    >🏠 Zur Startseite</a
+  >
+</div>
+
+<form
+  method="POST"
+  action="{{ url_for('reset_game') }}"
+  style="margin-top: 30px"
+>
+  <button
+    type="submit"
+    class="btn"
+    onclick="return confirm('Willst du das Spiel wirklich zurücksetzen?')"
+  >
+    🔄 Spiel zurücksetzen
+  </button>
+</form>
+{% endif %} {% endblock %}
