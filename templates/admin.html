@@ -203,6 +203,12 @@ block content %}
     <strong>Lies den Mordfund-Text vor.</strong> Die Spieler sehen jetzt beim
     Neuladen das Opfer und weitere Details.
   </p>
+  {% if game_state.victim %}
+  <p style="color: #fff; margin: 10px 0 0 0; font-size: 1.1em">
+    <strong>🔪 Opfer:</strong> {{ game_state.victim.name }} ({{
+    game_state.victim.role }})
+  </p>
+  {% endif %}
 </div>
 {% elif game_state.current_phase == 5 %}
 <div
@@ -216,14 +222,28 @@ block content %}
 >
   <h3 style="margin-top: 0; color: #fff">📋 Spielleiter-Anweisung: Phase 5</h3>
   <p style="color: #fff; margin: 0">
-    <strong
-      >Lies den Text vor, dass endlich eine Entscheidung getroffen werden
-      soll.</strong
-    >
+    <strong>Lies den folgenden Text vor:</strong>
   </p>
-  <p style="color: #fff; margin: 10px 0 0 0">
-    Die Spieler stimmen jetzt über ihre App ab. Warte, bis alle abgestimmt
-    haben.
+</div>
+
+<!-- Phase-5-Vorlesetext für Spielleiter -->
+{% if phase5_speech %}
+<div style="background: #34495e; padding: 20px; border-radius: 8px; margin: 20px 0; color: #ecf0f1;">
+  {{ phase5_speech|safe }}
+</div>
+{% endif %}
+
+<div
+  style="
+    background: #e67e22;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 5px solid #d35400;
+  "
+>
+  <p style="color: #fff; margin: 0">
+    Die Spieler stimmen jetzt über ihre App ab. Warte, bis alle abgestimmt haben.
   </p>
 </div>
 
@@ -238,6 +258,23 @@ block content %}
   "
 >
   <h3 style="margin-top: 0">🗳️ Abstimmungsfortschritt</h3>
+
+  <!-- Stichwahl-Hinweis -->
+  {% if game_state.runoff_active %}
+  <div style="background: #e67e22; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+    <p style="margin: 0; font-size: 1.2em;"><strong>⚠️ STICHWAHL - Runde {{ game_state.runoff_round }}</strong></p>
+    <p style="margin: 10px 0 0 0;">Es gab einen Gleichstand! Die folgenden Kandidaten stehen zur Stichwahl:</p>
+    <p style="margin: 10px 0 0 0; font-size: 1.1em;">
+      {% for candidate_id in game_state.runoff_candidates %}
+        {% set candidate = game_state.active_characters|selectattr('id', 'equalto', candidate_id)|first %}
+        {% if candidate %}
+          {% set letter = game_state.letter_mapping.get(candidate_id, candidate.letter) %}
+          <strong>{{ candidate.name }} [{{ letter }}]</strong>{% if not loop.last %}, {% endif %}
+        {% endif %}
+      {% endfor %}
+    </p>
+  </div>
+  {% endif %}
 
   {% set total_players = game_state.num_players %} {% set votes_cast =
   game_state.votes|length %} {% set progress_percent = (votes_cast /
@@ -467,19 +504,16 @@ block content %}
   >
     <input type="hidden" name="action" value="change_phase" />
 
-    {% set phase_color_3 = '#27ae60' if game_state.current_phase == 3 else
-    '#7f8c8d' %} {% set phase_color_4 = '#27ae60' if game_state.current_phase ==
-    4 else '#7f8c8d' %} {% set phase_color_5 = '#27ae60' if
-    game_state.current_phase == 5 else '#7f8c8d' %}
-
+    {% if game_state.current_phase == 3 %}
     <button
       type="submit"
       name="phase"
       value="3"
       class="btn"
-      style="background: {{ phase_color_3 }};"
+      style="background: #27ae60;"
+      disabled
     >
-      Phase 3 (Rollen)
+      ✓ Phase 3 (Rollen) - Aktiv
     </button>
 
     <button
@@ -487,9 +521,20 @@ block content %}
       name="phase"
       value="4"
       class="btn"
-      style="background: {{ phase_color_4 }};"
+      style="background: #3498db;"
     >
-      Phase 4 (Opfer-Reveal)
+      → Phase 4 (Opfer-Reveal)
+    </button>
+    {% elif game_state.current_phase == 4 %}
+    <button
+      type="submit"
+      name="phase"
+      value="4"
+      class="btn"
+      style="background: #27ae60;"
+      disabled
+    >
+      ✓ Phase 4 (Opfer-Reveal) - Aktiv
     </button>
 
     <button
@@ -497,10 +542,11 @@ block content %}
       name="phase"
       value="5"
       class="btn"
-      style="background: {{ phase_color_5 }};"
+      style="background: #3498db;"
     >
-      Phase 5 (Abstimmung)
+      → Phase 5 (Abstimmung)
     </button>
+    {% endif %}
   </form>
 </div>
 {% else %}
@@ -551,35 +597,32 @@ game_state.final_verdict_correct %}
     </p>
   </div>
 
+  <!-- Phase 5 Outcome Text anzeigen -->
+  {% if phase5_outcome_text %}
+  <div style="margin-top: 20px">
+    {{ phase5_outcome_text|safe }}
+  </div>
+  {% endif %}
+
   {% if is_correct %}
   <div style="font-size: 1.2em; margin: 20px 0">
     <p><strong>✅ RICHTIG!</strong></p>
     <p>Der wahre Mörder wurde identifiziert und zur Rechenschaft gezogen.</p>
-    <p style="margin-top: 15px">
-      Nach wenigen Minuten ist alles vorbei. Der Schrecken scheint endgültig
-      besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit
-      ins Grab und hoffen auf einen ruhigen Schlaf.
-    </p>
   </div>
   {% else %}
   <div style="font-size: 1.2em; margin: 20px 0">
     <p><strong>❌ FALSCH!</strong></p>
     <p>Die Gruppe hat sich geirrt. Ein Unschuldiger wurde verurteilt.</p>
     {% set murder_char = characters|selectattr('id', 'equalto',
-    game_state.murder_id)|first %} {% set werewolf_letter =
+    game_state.murder_id)|first %} {% set murder_letter =
     game_state.letter_mapping.get(game_state.murder_id, murder_char.letter if
     murder_char else '?') %}
     <p style="margin-top: 15px">
       Der wahre Mörder war:
       <strong
         >{{ murder_char.name if murder_char else 'Unbekannt' }} [{{
-        werewolf_letter }}]</strong
+        murder_letter }}]</strong
       >
-    </p>
-    <p style="margin-top: 15px">
-      Nach wenigen Minuten ist alles vorbei. Doch es war die falsche Person.
-      Trotzdem schlafen alle den Schlaf der Gerechten – bis ein weiterer Schrei
-      die vollmondhelle Nacht durchhallt.
     </p>
   </div>
   {% endif %}
@@ -605,6 +648,74 @@ game_state.final_verdict_correct %}
       <strong>{{ votes_received }} Stimme(n)</strong>
     </p>
     {% endif %} {% endfor %}
+  </div>
+
+  <!-- Vollständige Rollenübersicht nach finaler Abstimmung -->
+  <div
+    style="
+      background: rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+    "
+  >
+    <h3 style="margin-top: 0">🎭 Alle Rollen - Spielauflösung</h3>
+
+    <div style="margin-bottom: 20px; padding: 15px; background: rgba(231, 76, 60, 0.3); border-radius: 5px;">
+      <h4 style="margin: 0 0 10px 0;">🔪 Opfer & Mörder</h4>
+      {% set murder_char = characters|selectattr('id', 'equalto', game_state.murder_id)|first %}
+      {% set murder_letter = game_state.letter_mapping.get(game_state.murder_id, murder_char.letter if murder_char else '?') %}
+      <p style="margin: 5px 0;"><strong>Opfer:</strong> {{ game_state.victim.name if game_state.victim else 'Unbekannt' }}</p>
+      <p style="margin: 5px 0;"><strong>Mörder:</strong> {{ murder_char.name if murder_char else 'Unbekannt' }} [{{ murder_letter }}]</p>
+    </div>
+
+    <div style="margin-bottom: 20px; padding: 15px; background: rgba(155, 89, 182, 0.3); border-radius: 5px;">
+      <h4 style="margin: 0 0 10px 0;">🎯 Spezial-Rollen</h4>
+
+      {% if game_state.intrigant_id %}
+        {% set intrigant_char = characters|selectattr('id', 'equalto', game_state.intrigant_id)|first %}
+        {% set intrigant_letter = game_state.letter_mapping.get(game_state.intrigant_id, intrigant_char.letter if intrigant_char else '?') %}
+        {% set intrigant_target_char = characters|selectattr('id', 'equalto', game_state.intrigant_target_id)|first %}
+        {% set intrigant_target_letter = game_state.letter_mapping.get(game_state.intrigant_target_id, intrigant_target_char.letter if intrigant_target_char else '?') %}
+        <p style="margin: 5px 0;">
+          <strong>🎭 Intrigant:</strong> {{ intrigant_char.name if intrigant_char else 'Unbekannt' }} [{{ intrigant_letter }}]
+          → Ziel: {{ intrigant_target_char.name if intrigant_target_char else 'Unbekannt' }} [{{ intrigant_target_letter }}]
+        </p>
+      {% endif %}
+
+      {% if game_state.desperate_id %}
+        {% set desperate_char = characters|selectattr('id', 'equalto', game_state.desperate_id)|first %}
+        {% set desperate_letter = game_state.letter_mapping.get(game_state.desperate_id, desperate_char.letter if desperate_char else '?') %}
+        <p style="margin: 5px 0;">
+          <strong>😔 Verzweifelte Person:</strong> {{ desperate_char.name if desperate_char else 'Unbekannt' }} [{{ desperate_letter }}]
+        </p>
+      {% endif %}
+
+      {% if game_state.lovers and game_state.lovers|length == 2 %}
+        {% set lover1_char = characters|selectattr('id', 'equalto', game_state.lovers[0])|first %}
+        {% set lover1_letter = game_state.letter_mapping.get(game_state.lovers[0], lover1_char.letter if lover1_char else '?') %}
+        {% set lover2_char = characters|selectattr('id', 'equalto', game_state.lovers[1])|first %}
+        {% set lover2_letter = game_state.letter_mapping.get(game_state.lovers[1], lover2_char.letter if lover2_char else '?') %}
+        <p style="margin: 5px 0;">
+          <strong>💕 Verliebtes Paar:</strong>
+          {{ lover1_char.name if lover1_char else 'Unbekannt' }} [{{ lover1_letter }}] ❤️
+          {{ lover2_char.name if lover2_char else 'Unbekannt' }} [{{ lover2_letter }}]
+        </p>
+      {% endif %}
+    </div>
+
+    <div style="padding: 15px; background: rgba(230, 126, 34, 0.3); border-radius: 5px;">
+      <h4 style="margin: 0 0 10px 0;">⏰ Awakeners</h4>
+      {% if game_state.awakeners %}
+        {% for awakener_id in game_state.awakeners %}
+          {% set awakener_char = characters|selectattr('id', 'equalto', awakener_id)|first %}
+          {% set awakener_letter = game_state.letter_mapping.get(awakener_id, awakener_char.letter if awakener_char else '?') %}
+          <p style="margin: 5px 0;">{{ awakener_char.name if awakener_char else 'Unbekannt' }} [{{ awakener_letter }}]</p>
+        {% endfor %}
+      {% else %}
+        <p style="margin: 5px 0; color: #bdc3c7;">Keine Awakeners</p>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endif %}

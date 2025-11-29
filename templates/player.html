@@ -20,11 +20,11 @@ endblock %} {% block content %}
 <!-- Phase 1-2: Nur Rolle anzeigen -->
 {% if current_phase >= 1 %}
 <!-- Möder oder Unschuldig -->
-{% if is_werewolf and werewolf_text %} {{ werewolf_text | safe }} {% elif not
-is_werewolf %} {{ innocent_text | safe }} {% endif %} {% endif %}
+{% if is_murder_ and murder_text %} {{ murder_text | safe }} {% elif not
+is_murder_ %} {{ innocent_text | safe }} {% endif %} {% endif %}
 
 <!-- Phase 3: Nachtverhalten anzeigen (nur für Unschuldige, da Mörder es bereits im Mörder-Text hat) -->
-{% if current_phase >= 3 and not is_werewolf %}
+{% if current_phase >= 3 and not is_murder_ %}
 <div class="phase3-info">
   <h3>🌙 Dein Verhalten in der Nacht (Phase 3)</h3>
   <p><strong>Was du getan hast:</strong></p>
@@ -99,17 +99,36 @@ is_werewolf %} {{ innocent_text | safe }} {% endif %} {% endif %}
     </p>
   </div>
 
-  <!-- Auto-Refresh Script (nur wenn noch nicht alle abgestimmt haben) -->
-  {% if not voting_complete %}
-  <script>
-    // Auto-Refresh alle 10 Sekunden (wartet auf Ergebnis)
-    setTimeout(function () {
-      location.href = location.href;
-    }, 10000);
-  </script>
-  {% endif %}
+  <!-- Zeige Phase-5-Outcome wenn Abstimmung komplett -->
+  {% if voting_complete and phase5_outcome_text %}
+  <div style="margin-top: 25px">{{ phase5_outcome_text|safe }}</div>
 
-  <!-- Manueller Refresh Button -->
+  <!-- Persönliche Erfolgsmeldung -->
+  {% if personal_outcome_message %}
+  <div class="personal-outcome {% if personal_outcome_success %}success{% else %}failure{% endif %}">
+    <h3 style="margin-top: 0; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px;">
+      {% if personal_outcome_success %}✅ Ziel erreicht!{% else %}❌ Ziel verfehlt{% endif %}
+    </h3>
+    {{ personal_outcome_message|safe }}
+  </div>
+
+  <style>
+    .personal-outcome {
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 25px;
+      color: #fff;
+    }
+    .personal-outcome.success {
+      background: #27ae60;
+    }
+    .personal-outcome.failure {
+      background: #c0392b;
+    }
+  </style>
+  {% endif %}
+  {% else %}
+  <!-- Manueller Refresh Button (kein Auto-Reload) -->
   <button
     onclick="location.href = location.href"
     class="btn"
@@ -117,7 +136,7 @@ is_werewolf %} {{ innocent_text | safe }} {% endif %} {% endif %}
   >
     🔄 Seite aktualisieren
   </button>
-  {% else %}
+  {% endif %} {% else %}
   <p style="color: #fff; font-size: 1.1em; margin-bottom: 20px">
     <strong>Wähle die Person, die deiner Meinung nach der Mörder ist:</strong>
   </p>
@@ -153,34 +172,43 @@ is_werewolf %} {{ innocent_text | safe }} {% endif %} {% endif %}
         margin-bottom: 15px;
       "
     >
-      {% for char in active_characters %} {% if char.id != character.id %} {% if
-      not runoff_active or char.id in runoff_candidates %} {% set letter =
-      letter_mapping.get(char.id, char.letter) %}
-      <div style="margin: 10px 0">
-        <label
-          style="
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            color: #ecf0f1;
-          "
-        >
-          <input
-            type="radio"
-            name="accused_id"
-            value="{{ char.id }}"
-            required
-            style="
-              margin-right: 10px;
-              width: 20px;
-              height: 20px;
-              cursor: pointer;
-            "
-          />
-          <span style="font-size: 1.1em">{{ char.name }} [{{ letter }}]</span>
-        </label>
-      </div>
-      {% endif %} {% endif %} {% endfor %}
+      {% for char in active_characters %}
+      {# Verzweifelte Person darf für sich selbst stimmen, alle anderen nicht #}
+      {% if char.id != character.id or is_desperate %}
+        {% if not runoff_active or char.id in runoff_candidates %}
+          {% set letter = letter_mapping.get(char.id, char.letter) %}
+          <div style="margin: 10px 0">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                color: #ecf0f1;
+              "
+            >
+              <input
+                type="radio"
+                name="accused_id"
+                value="{{ char.id }}"
+                required
+                style="
+                  margin-right: 10px;
+                  width: 20px;
+                  height: 20px;
+                  cursor: pointer;
+                "
+              />
+              <span style="font-size: 1.1em">
+                {{ char.name }} [{{ letter }}]
+                {% if char.id == character.id and is_desperate %}
+                  <em style="color: #e74c3c;">(Du selbst)</em>
+                {% endif %}
+              </span>
+            </label>
+          </div>
+        {% endif %}
+      {% endif %}
+      {% endfor %}
     </div>
 
     <button

@@ -95,7 +95,7 @@ PHASE3_TEXTS = {
 }
 
 # Texte für Mörder Unschuldige
-WEREWOLF_TEXT_TEMPLATE = """
+MURDER_TEXT_TEMPLATE = """
 <div class="innocent-info">
     <h2>⚠️ Deine Rolle</h2>
 
@@ -114,7 +114,7 @@ WEREWOLF_TEXT_TEMPLATE = """
 
         <p>Dieses Wesen ist schnell, stark und tödlich – aber nur solange der Mond dich direkt trifft.</p>
 
-        <p>Der Mond beleuchtet die Szenerie vor dir. Schneetreiben, der Bach und der Wald dahinter der sich meilenweit erstreckt. Du springst vom Balkon im ersten Stock in den Schnee und gehst Richtung Wald. Doch plötzlich triffst du auf <strong>{victim_name}</strong>.</p>
+        <p>Der Mond beleuchtet die Szenerie vor dir. Schneetreiben, der Bach und der Wald dahinter der sich meilenweit erstreckt. Du legst deine nun zu kleine Kleidung ab und springst vom Balkon im ersten Stock in den Schnee und gehst Richtung Wald. Doch plötzlich triffst du auf <strong>{victim_name}</strong>.</p>
 
         {motive_text}
 
@@ -205,10 +205,10 @@ MOTIVE_MATRIX = {
         "Jonas Reber": "Jonas hat versucht dir Follower abzuluchsen - das muss er mit dem Leben bezahlen."
     },
     6: {
-        "Jonas Reber": "Jonas hat dir heute schon wieder den Vorwuf gemacht am Tod seiner Mutter Schuld gehabt zu haben. Genug ist genug.",
+        "Jonas Reber": "Jonas hat dir heute schon wieder den Vorwuf gemacht am Tod seines Vaters Schuld gehabt zu haben. Genug ist genug.",
     },
     7: {
-        "Viktor Bergmann": "Sie sieht ihn in Verantwortung für den Tod ihres Vaters und Tante 1991.",
+        "Viktor Bergmann": "Du siehst ihn in Verantwortung für den Tod ihres Vaters und Tante damals im Jahr 1991.",
         "Jonas Reber": "Jonas kocht zu selten mit Bio-Zutaten und zu wenige vegetarische Gerichte. Mit Leuten wie ihm geht die Welt den Bach runter."
     },
     8: {
@@ -343,19 +343,21 @@ game_state = {
 # ============================================================================
 
 def get_character_by_slug(slug):
-    """Gibt den Charakter anhand des URL-Slugs oder des zugewiesenen Buchstabens zurück."""
+    """Gibt den Charakter anhand des URL-Slugs zurück."""
+    # Unterstütze /player/spieler-1, /player/spieler-2, etc. (ID-basiert)
+    if slug.startswith("spieler-"):
+        try:
+            char_id = int(slug.split("spieler-", 1)[1])
+            for char in CHARACTERS:
+                if char["id"] == char_id:
+                    return char
+        except (ValueError, IndexError):
+            pass
+
+    # Fallback: Alter URL-Slug (für Abwärtskompatibilität)
     for char in CHARACTERS:
         if char["url_slug"] == slug:
             return char
-
-    # Erlaube außerdem Zugriffe wie /player/spieler-c, wobei der Buchstabe zufällig zugewiesen wurde.
-    letter_mapping = game_state.get("letter_mapping", {})
-    if slug.startswith("spieler-"):
-        letter_part = slug.split("spieler-", 1)[1].strip().upper()
-        if len(letter_part) == 1:
-            for char in CHARACTERS:
-                if letter_mapping.get(char["id"]) == letter_part:
-                    return char
 
     return None
 
@@ -365,13 +367,15 @@ def select_random_characters(num_players):
 
 def assign_random_letters(characters):
     """
-    Weist jedem Charakter sequenziell einen Buchstaben zu (A, B, C, ...).
-    Bei 7 Spielern: A-G, bei 8 Spielern: A-H, bei 10 Spielern: A-J.
+    Weist jedem Charakter zufällig einen Buchstaben zu.
+    Bei 7 Spielern: A-G (zufällig verteilt), bei 8 Spielern: A-H (zufällig verteilt), etc.
     Gibt ein Dictionary zurück: {char_id: "A", ...}
     """
     available_letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
     # Nimm nur die ersten N Buchstaben basierend auf der Anzahl der Spieler
     selected_letters = available_letters[:len(characters)]
+    # Mische diese Buchstaben zufällig
+    random.shuffle(selected_letters)
 
     letter_mapping = {}
     for i, char in enumerate(characters):
@@ -379,12 +383,9 @@ def assign_random_letters(characters):
 
     return letter_mapping
 
-def get_player_slug(character, letter_mapping):
-    """Ermittelt den passenden Player-Slug anhand des zugewiesenen Buchstabens."""
-    assigned_letter = letter_mapping.get(character["id"])
-    if assigned_letter:
-        return f"spieler-{assigned_letter.lower()}"
-    return character["url_slug"]
+def get_player_slug(character):
+    """Ermittelt den passenden Player-Slug anhand der Charakter-ID."""
+    return f"spieler-{character['id']}"
 
 def reset_voting_state():
     """Setzt alle Voting-bezogenen Zustände zurück (z. B. beim Neustart oder neuer Phase 5)."""
@@ -494,10 +495,10 @@ def replace_letter_placeholders(text, letter_mapping, active_characters):
     # Ersetze alle [A], [B], etc.
     return re.sub(r'\[([A-J])\]', replace_match, text)
 
-def select_werewolf(characters, seed_tuple, victim):
+def select_murder(characters, seed_tuple, victim):
     """Wählt deterministisch-zufällig einen Mörder mit Gewichtung basierend auf Motiven"""
     # Besserer Seed mit SHA-256 für gleichmäßigere Verteilung
-    seed_string = str(seed_tuple) + "_werewolf"
+    seed_string = str(seed_tuple) + "_murder"
     seed_hash = hashlib.sha256(seed_string.encode()).hexdigest()
     seed_value = int(seed_hash, 16) % (2**32)
     random.seed(seed_value)
@@ -512,9 +513,9 @@ def select_werewolf(characters, seed_tuple, victim):
         weights.append(2 if has_motive else 1)
 
     # Gewichtete Auswahl
-    werewolf = random.choices(characters, weights=weights, k=1)[0]
+    murder = random.choices(characters, weights=weights, k=1)[0]
     random.seed()  # Seed zurücksetzen
-    return werewolf["id"]
+    return murder["id"]
 
 def select_random_victim(seed_tuple):
     """Wählt deterministisch-zufällig eines der drei NPCs als Mordopfer basierend auf dem Event-Seed"""
@@ -544,30 +545,24 @@ def select_awakeners(active_characters, murder_id):
 
     return [char["id"] for char in awakeners]
 
-def select_special_roles(active_characters, murder_id, seed_tuple):
+def select_special_roles(active_characters, murder_id):
     """
-    Wählt deterministisch-zufällig die speziellen Rollen:
+    Wählt ECHT-ZUFÄLLIG die speziellen Rollen (nicht deterministisch):
     - Intrigant (will jemandem den Mord anhängen)
     - Verzweifelte Person (will als Mörder identifiziert werden)
     - Verliebtes Paar (wollen gemeinsam überleben)
 
     Alle außer dem Mörder können diese Rollen bekommen.
+    Die Auswahl ist nicht Seed-basiert, sondern bei jedem Spielstart neu zufällig.
     """
-    # Besserer Seed für spezielle Rollen
-    seed_string = str(seed_tuple) + "_special_roles"
-    seed_hash = hashlib.sha256(seed_string.encode()).hexdigest()
-    seed_value = int(seed_hash, 16) % (2**32)
-    random.seed(seed_value)
-
     # Alle außer dem Mörder
     innocents = [char for char in active_characters if char["id"] != murder_id]
 
     # Sicherstellen, dass genug Spieler vorhanden sind (mindestens 5 für alle Rollen)
     if len(innocents) < 5:
-        random.seed()
         return None, None, None, []
 
-    # Mische die Unschuldigen
+    # Mische die Unschuldigen (echt zufällig, kein Seed)
     available = innocents.copy()
     random.shuffle(available)
 
@@ -581,8 +576,6 @@ def select_special_roles(active_characters, murder_id, seed_tuple):
     # 3. Verliebtes Paar auswählen (2 Personen)
     lover1 = available.pop(0)
     lover2 = available.pop(0)
-
-    random.seed()  # Seed zurücksetzen
 
     return intrigant["id"], intrigant_target["id"], desperate["id"], [lover1["id"], lover2["id"]]
 
@@ -613,8 +606,37 @@ def generate_motive_text(murder_id, victim):
 
     return f"<p>{DEFAULT_MOTIVE_TEXT}</p>"
 
+def build_phase5_intro_speech(victim):
+    """Erstellt die einleitende Rede für Phase 5 (vor der Abstimmung)."""
+    # Bestimme, wer die Abstimmung einfordert (Hotelbesitzer oder falls tot, der Investor)
+    if victim and victim.get("name") == "Viktor Bergmann":
+        speaker = "Der russische Investor"
+    else:
+        speaker = "Der langjährige Hotelbesitzer"
+
+    speech = f'''
+    <div class="phase5-intro" style="background: #2c3e50; padding: 20px; border-radius: 8px; margin-top: 25px;">
+        <h3 style="margin-top: 0;">Phase 5 - Die Anklage</h3>
+        <p><strong>{speaker} steht auf.</strong></p>
+        <p>„Genug. Es reicht."</p>
+        <p>Er lässt den Blick über die Runde wandern, als wolle er sich jeden Einzelnen genau einprägen.</p>
+        <p>„Ich weiß nicht, was heute Nacht passiert ist… aber ich weiß eines: Hier drin sitzt jemand, der uns alle in Gefahr gebracht hat. Und ich werde nicht zulassen, dass das nochmal passiert."</p>
+        <p>Er ballt die Hände, zwingt sich aber, die Stimme gleichmäßig zu halten.</p>
+        <p>„Die Polizei rufen? Nein. Dafür ist es zu spät und außerdem kommt bei dem Wetter niemand hierher. Dafür ist zu viel auf dem Spiel. Dieser Ort darf nicht wieder in die Schlagzeilen. Nicht nach dem, was hier früher schon geschehen ist."</p>
+        <p>Ein kurzes Schweigen. Dann:</p>
+        <p>„Mir ist egal, wer es war. Mir ist egal, warum. Aber es endet heute Nacht. Hier. In diesem Raum."</p>
+        <p>Er zeigt auf die Gruppe.</p>
+        <p>„Ihr werdet jetzt abstimmen. Jede und jeder von euch weiß genug, um eine Entscheidung zu treffen. Schaut euch an, hört einander zu – und entscheidet. Wer von euch ist fähig gewesen, das zu tun?"</p>
+        <p>Er tritt einen Schritt zurück, seine Stimme wird dunkler.</p>
+        <p>„Ich verspreche euch: Ich kümmere mich danach persönlich um die Person, die ihr bestimmt. Auge um Auge. Zahn um Zahn."</p>
+        <p>Noch ein tiefes Einatmen.</p>
+        <p>„Wir stimmen geheim ab. Es wird Zeit, dass wir das Monster unter uns finden – bevor die Nacht noch jemanden verschlingt."</p>
+    </div>
+    '''
+    return speech
+
 def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim):
-    """Erstellt den Phase-5-Text basierend auf der Entscheidung."""
+    """Erstellt den Phase-5-Ergebnis-Text nach der Abstimmung (ohne die einleitende Rede)."""
     if not accused_char or is_correct is None:
         return None
 
@@ -623,52 +645,138 @@ def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim):
 
     # Bestimme, wer die Abstimmung einfordert (Hotelbesitzer oder falls tot, der Investor)
     if victim and victim.get("name") == "Viktor Bergmann":
-        speaker = "Der russische Investor"
         speaker_lower = "der russische Investor"
     else:
-        speaker = "Der Hotelbesitzer"
         speaker_lower = "der Hotelbesitzer"
 
-    # Die dramatische Rede zur Abstimmung
-    speech = f'''
-    <p><strong>{speaker} steht auf.</strong></p>
-    <p>„Genug. Es reicht."</p>
-    <p>Er lässt den Blick über die Runde wandern, als wolle er sich jeden Einzelnen genau einprägen.</p>
-    <p>„Ich weiß nicht, was heute Nacht passiert ist… aber ich weiß eines: Hier drin sitzt jemand, der uns alle in Gefahr gebracht hat. Und ich werde nicht zulassen, dass das nochmal passiert."</p>
-    <p>Er ballt die Hände, zwingt sich aber, die Stimme gleichmäßig zu halten.</p>
-    <p>„Die Polizei rufen? Nein. Dafür ist es zu spät und außerdem kommt bei dem Wetter niemand hierher. Dafür ist zu viel auf dem Spiel. Dieser Ort darf nicht wieder in die Schlagzeilen. Nicht nach dem, was hier früher schon geschehen ist."</p>
-    <p>Ein kurzes Schweigen. Dann:</p>
-    <p>„Mir ist egal, wer es war. Mir ist egal, warum. Aber es endet heute Nacht. Hier. In diesem Raum."</p>
-    <p>Er zeigt auf die Gruppe.</p>
-    <p>„Ihr werdet jetzt abstimmen. Jede und jeder von euch weiß genug, um eine Entscheidung zu treffen. Schaut euch an, hört einander zu – und entscheidet. Wer von euch ist fähig gewesen, das zu tun?"</p>
-    <p>Er tritt einen Schritt zurück, seine Stimme wird dunkler.</p>
-    <p>„Ich verspreche euch: Ich kümmere mich danach persönlich um die Person, die ihr bestimmt. Auge um Auge. Zahn um Zahn."</p>
-    <p>Noch ein tiefes Einatmen.</p>
-    <p>„Also… wer ist es? Es wird Zeit, dass wir das Monster unter uns finden – bevor die Nacht noch jemanden verschlingt."</p>
-    <hr style="margin: 20px 0; border: none; border-top: 1px solid #34495e;">
-    <p>Als die Entscheidung gefallen ist, wird <strong>{accused_display}</strong> unruhig und blickt die Umstehenden flehentlich an. Da schreit {speaker_lower} auf: <em>„Nun gut, wir haben demokratisch entschieden: HÄNGT DEN MÖRDER!"</em></p>
-    '''
 
     if is_correct:
-        outcome = '''
-        <p><strong>Nach wenigen Minuten ist alles vorbei.</strong></p>
-        <p>Der Schrecken scheint endgültig besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit ins Grab und hoffen auf einen ruhigen Schlaf.</p>
+        outcome = f'''
+        <p>Doch so leicht gibt <strong>{accused_display}</strong> nicht auf und ruft: "Denkt ihr normalsterblichen ihr könntet einen Werwolf einfach erhängen?".
+        Doch noch bevor es zu einem weiteren Wort oder Tumult kommen kann, knallt es Ohrenbetäubend laut. Ein greller Blitz durchzuckt den Raum und ein markerschütternder Schrei erfüllt die Luft.
+        Helga hält die Flinte noch in der Hand aus dessen Lauf es raucht. Die Flinte war mit Silberkugeln geladen gewesen.</p>
+        <p>Der Schrecken scheint endgültig besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit ins Grab und hoffen nun auf einen ruhigen Schlaf.</p>
         '''
     else:
-        outcome = '''
-        <p><strong>Nach wenigen Minuten ist alles vorbei.</strong></p>
-        <p>Doch es war die falsche Person. Trotzdem schlafen alle den Schlaf der Gerechten – bis ein weiterer Schrei die vollmondhelle Nacht durchhallt.</p>
+        # Großschreibung für Satzanfang
+        speaker_capitalized = speaker_lower.capitalize()
+        outcome = f'''
+        <p>{speaker_capitalized} schlägt <strong>{accused_display}</strong> mit einem Knüppel auf den Hinterkopf und zusammen mit den anderen Bediensteten wird <strong>{accused_display}</strong> mit einem Seil am selben Ast aufgehängt. <strong>Nach wenigen Minuten ist alles vorbei.</strong></p>
+        <p>Völlig erschöpft gehen alle zu Bett und schlafen den Schlaf der Gerechten... bis die Wolken sich wieder verziehen und ein weiterer Schrei die vollmondhelle Nacht durchhallt.</p>
         '''
 
     html_content = f'''
     <div class="phase5-outcome" style="background: #2c3e50; padding: 20px; border-radius: 8px; margin-top: 25px;">
         <h3 style="margin-top: 0;">Phase 5 - Das Urteil</h3>
-        {speech}
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #34495e;">
+        <p>Als die Entscheidung gefallen ist, wird <strong>{accused_display}</strong> unruhig und blickt die Umstehenden flehentlich an. Da schreit {speaker_lower} auf: 
+        <em>„Alea iacta est. Die Entscheidung ist gefallen und nun muss <strong>{accused_display}</strong> sterben! "</em></p>
         {outcome}
     </div>
     '''
 
     return html_content
+
+
+def get_personal_outcome(character_id, accused_id, murderer_id, letter_mapping):
+    """
+    Erstellt eine personalisierte Erfolgsmeldung für einen Spieler basierend auf seinen Zielen.
+
+    Mögliche Ziele:
+    - Mörder: Nicht entdeckt werden
+    - Intrigant: Das Intrigant-Ziel soll hingerichtet werden
+    - Verzweifelte Person: Selbst hingerichtet werden
+    - Verliebtes Paar: Beide müssen überleben (beide dürfen nicht hingerichtet werden)
+    - Normale Unschuldige: Mörder muss hingerichtet werden
+
+    Returns: (success: bool, message: str)
+    """
+
+    intrigant_id = game_state.get("intrigant_id")
+    intrigant_target_id = game_state.get("intrigant_target_id")
+    desperate_id = game_state.get("desperate_id")
+    lovers = game_state.get("lovers", [])
+
+    is_murderer = (character_id == murderer_id)
+    is_accused = (character_id == accused_id)
+    is_intrigant = (character_id == intrigant_id)
+    is_desperate = (character_id == desperate_id)
+    is_lover = (character_id in lovers)
+
+    # Sammle alle erreichten und verfehlten Ziele
+    achieved_goals = []
+    failed_goals = []
+
+    # === MÖRDER ===
+    if is_murderer:
+        if not is_accused:
+            achieved_goals.append("🎭 <strong>Mörder-Ziel erreicht:</strong> Du bist unentdeckt geblieben und hast dein Verbrechen vertuscht.")
+        else:
+            failed_goals.append("💀 <strong>Mörder-Ziel verfehlt:</strong> Du wurdest als Mörder entlarvt und hingerichtet.")
+
+    # === INTRIGANT ===
+    if is_intrigant:
+        target_char = get_character_by_id(intrigant_target_id)
+        if target_char:
+            target_letter = letter_mapping.get(intrigant_target_id, target_char.get("letter", "?"))
+            target_display = f"{target_char['name']} [{target_letter}]"
+
+            if accused_id == intrigant_target_id:
+                achieved_goals.append(f"🎯 <strong>Intrigant-Ziel erreicht:</strong> Du hast erfolgreich {target_display} den Mord angehängt!")
+            else:
+                failed_goals.append(f"🎯 <strong>Intrigant-Ziel verfehlt:</strong> {target_display} wurde nicht hingerichtet.")
+
+    # === VERZWEIFELTE PERSON ===
+    if is_desperate:
+        if is_accused:
+            achieved_goals.append("😔 <strong>Verzweifeltes Ziel erreicht:</strong> Du hast dein Ende gefunden. Möge deine Seele nun Frieden finden.")
+        else:
+            failed_goals.append("😔 <strong>Verzweifeltes Ziel verfehlt:</strong> Du lebst weiter, doch der innere Schmerz bleibt.")
+
+    # === VERLIEBTES PAAR ===
+    if is_lover:
+        # Finde den/die Partner/in
+        lover_partner_id = lovers[1] if lovers[0] == character_id else lovers[0]
+        partner_char = get_character_by_id(lover_partner_id)
+
+        if partner_char:
+            partner_letter = letter_mapping.get(lover_partner_id, partner_char.get("letter", "?"))
+            partner_display = f"{partner_char['name']} [{partner_letter}]"
+
+            # Beide müssen überleben
+            partner_survived = (lover_partner_id != accused_id)
+            i_survived = not is_accused
+
+            if partner_survived and i_survived:
+                achieved_goals.append(f"💕 <strong>Liebespaar-Ziel erreicht:</strong> Du und {partner_display} habt beide überlebt und könnt gemeinsam in die Zukunft blicken!")
+            elif not partner_survived and not i_survived:
+                failed_goals.append(f"💕 <strong>Liebespaar-Ziel verfehlt:</strong> Ihr wurdet beide hingerichtet. Wenigstens seid ihr zusammen im Tod.")
+            elif not partner_survived:
+                failed_goals.append(f"💔 <strong>Liebespaar-Ziel verfehlt:</strong> {partner_display} wurde hingerichtet. Du bleibst allein zurück.")
+            else:  # not i_survived
+                failed_goals.append(f"💔 <strong>Liebespaar-Ziel verfehlt:</strong> Du wurdest hingerichtet und lässt {partner_display} allein zurück.")
+
+    # === NORMALE UNSCHULDIGE (ohne spezielle Rolle) ===
+    if not is_murderer and not is_intrigant and not is_desperate and not is_lover:
+        murderer_caught = (accused_id == murderer_id)
+
+        if murderer_caught:
+            achieved_goals.append("⚖️ <strong>Unschuldigen-Ziel erreicht:</strong> Der wahre Mörder wurde gefasst und die Gerechtigkeit siegt!")
+        else:
+            failed_goals.append("⚖️ <strong>Unschuldigen-Ziel verfehlt:</strong> Der Mörder ist noch frei. Die Unschuld wurde nicht gesühnt.")
+
+    # Kombiniere alle Nachrichten
+    all_messages = achieved_goals + failed_goals
+
+    if not all_messages:
+        return False, "<p>Keine speziellen Ziele.</p>"
+
+    # Bestimme Gesamterfolg (mindestens ein Ziel erreicht)
+    overall_success = len(achieved_goals) > 0
+
+    messages_html = "<br>".join(all_messages)
+
+    return overall_success, f"<div style='margin-top: 15px;'>{messages_html}</div>"
 
 
 # ============================================================================
@@ -746,12 +854,12 @@ def admin():
             game_state["victim"] = victim
 
             # Mörder mit Gewichtung basierend auf Motiv auswählen
-            game_state["murder_id"] = select_werewolf(active_chars, seed_tuple, victim)
+            game_state["murder_id"] = select_murder(active_chars, seed_tuple, victim)
             game_state["awakeners"] = select_awakeners(active_chars, game_state["murder_id"])
 
             # Spezielle Rollen auswählen (Intrigant, Verzweifelte Person, Verliebtes Paar)
             intrigant_id, intrigant_target_id, desperate_id, lovers = select_special_roles(
-                active_chars, game_state["murder_id"], seed_tuple
+                active_chars, game_state["murder_id"]
             )
             game_state["intrigant_id"] = intrigant_id
             game_state["intrigant_target_id"] = intrigant_target_id
@@ -773,16 +881,25 @@ def admin():
                 success = f"Phase 3 gestartet! Achtung: QR-Codes konnten nicht automatisch generiert werden."
 
         # Phasen-Wechsel für Spieler (3->4->5)
+        # Regel: Von Phase 3 nur zu Phase 4, von Phase 4 nur zu Phase 5
         elif action == 'change_phase':
             new_phase = request.form.get('phase', type=int)
-            if new_phase and 3 <= new_phase <= 5:
-                previous_phase = game_state.get("current_phase", 0)
+            current_phase = game_state.get("current_phase", 0)
+
+            # Validierung: nur erlaubte Übergänge
+            valid_transition = False
+            if current_phase == 3 and new_phase == 4:
+                valid_transition = True
+            elif current_phase == 4 and new_phase == 5:
+                valid_transition = True
+
+            if valid_transition:
                 game_state["current_phase"] = new_phase
-                if new_phase == 5 and previous_phase != 5:
+                if new_phase == 5:
                     reset_voting_state()
                 success = f"Spielphase wurde auf {new_phase} geändert."
             else:
-                error = "Ungültige Phase!"
+                error = f"Ungültiger Phasenwechsel! Von Phase {current_phase} kann nur zur nächsten Phase gewechselt werden."
 
         if error:
             session['admin_error'] = error
@@ -790,11 +907,29 @@ def admin():
             session['admin_success'] = success
         return redirect(url_for('admin'))
 
+    # Phase 5 Speech generieren, falls in Phase 5
+    phase5_speech = None
+    phase5_outcome_text = None
+
+    if game_state.get("current_phase") == 5:
+        phase5_speech = build_phase5_intro_speech(game_state.get("victim"))
+
+        # Phase 5 Outcome Text generieren, wenn Abstimmung abgeschlossen
+        if game_state.get("voting_complete", False) and game_state.get("final_accused_id"):
+            accused_char = get_character_by_id(game_state["final_accused_id"])
+            is_correct = game_state.get("final_verdict_correct", False)
+            letter_mapping = game_state.get("letter_mapping", {})
+            phase5_outcome_text = build_phase5_outcome_text(
+                accused_char, letter_mapping, is_correct, game_state.get("victim")
+            )
+
     return render_template('admin.html',
                          characters=CHARACTERS,
                          game_state=game_state,
                          error=error,
-                         success=success)
+                         success=success,
+                         phase5_speech=phase5_speech,
+                         phase5_outcome_text=phase5_outcome_text)
 
 @app.route('/player/<slug>')
 def player_view(slug):
@@ -812,7 +947,7 @@ def player_view(slug):
                              message="Ungültiger Spieler-Link. Bitte überprüfe die URL.")
 
     # Prüfen, ob dieser Charakter der Mörder ist
-    is_werewolf = (character["id"] == game_state["murder_id"])
+    is_murder = (character["id"] == game_state["murder_id"])
 
     # Prüfen, ob dieser Charakter beim ersten Schrei aufwacht
     is_awakener = character["id"] in game_state.get("awakeners", [])
@@ -840,10 +975,10 @@ def player_view(slug):
     abendverlauf = f"<p><strong>Dein Abend:</strong></p><p>{phase3['nacht']}</p><p>{phase3['alibi']}</p>"
 
     # Mörder-Text mit Platzhaltern füllen
-    werewolf_text = None
+    murder_text = None
     innocent_text = None
 
-    if is_werewolf:
+    if is_murder:
         # Motiv-Text generieren
         motive_text = generate_motive_text(
             game_state["murder_id"],
@@ -851,7 +986,7 @@ def player_view(slug):
         )
 
         # Mörder-Text zusammensetzen
-        werewolf_text = WEREWOLF_TEXT_TEMPLATE.format(
+        murder_text = MURDER_TEXT_TEMPLATE.format(
             abendverlauf=abendverlauf,
             victim_name=game_state["victim"]["name"],
             motive_text=motive_text
@@ -890,7 +1025,7 @@ def player_view(slug):
 
     # Aufwach-Text für Phase 4 erstellen (falls Aufwachender)
     awakening_text = None
-    if is_awakener and not is_werewolf:
+    if is_awakener and not is_murder:
         dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
 
         # Spezielle Rollen-Zusätze auch für Awakeners
@@ -926,16 +1061,45 @@ def player_view(slug):
     runoff_candidates = game_state.get("runoff_candidates", [])
     runoff_round = game_state.get("runoff_round", 0)
 
+    # Prüfe ob dieser Charakter die verzweifelte Person ist
+    is_desperate = (character["id"] == game_state.get("desperate_id"))
+
+    # Phase-5-Intro-Rede (sofort bei Phase 5, vor der Abstimmung)
+    phase5_intro_speech = None
+    if current_phase == 5:
+        phase5_intro_speech = build_phase5_intro_speech(game_state["victim"])
+
+    # Phase-5-Outcome Text generieren wenn Abstimmung abgeschlossen
+    phase5_outcome_text = None
+    personal_outcome_success = None
+    personal_outcome_message = None
+
+    if game_state.get("voting_complete", False) and game_state.get("final_accused_id"):
+        accused_char = get_character_by_id(game_state["final_accused_id"])
+        is_correct = game_state.get("final_verdict_correct", False)
+        phase5_outcome_text = build_phase5_outcome_text(
+            accused_char, letter_mapping, is_correct, game_state["victim"]
+        )
+
+        # Generiere persönliche Erfolgsmeldung für diesen Spieler
+        personal_outcome_success, personal_outcome_message = get_personal_outcome(
+            character["id"],
+            game_state["final_accused_id"],
+            game_state["murder_id"],
+            letter_mapping
+        )
+
     return render_template('player.html',
                          character=character,
                          assigned_letter=assigned_letter,
-                         is_werewolf=is_werewolf,
+                         is_murder=is_murder,
                          is_awakener=is_awakener,
+                         is_desperate=is_desperate,
                          victim=game_state["victim"],
                          phase3=phase3,
                          awakening_text=awakening_text,
                          current_phase=current_phase,
-                         werewolf_text=werewolf_text,
+                         murder_text=murder_text,
                          innocent_text=innocent_text,
                          has_voted=has_voted,
                          voting_complete=game_state.get("voting_complete", False),
@@ -943,7 +1107,11 @@ def player_view(slug):
                          runoff_candidates=runoff_candidates,
                          runoff_round=runoff_round,
                          active_characters=active_chars,
-                         letter_mapping=letter_mapping)
+                         letter_mapping=letter_mapping,
+                         phase5_intro_speech=phase5_intro_speech,
+                         phase5_outcome_text=phase5_outcome_text,
+                         personal_outcome_success=personal_outcome_success,
+                         personal_outcome_message=personal_outcome_message)
 
 @app.route('/victim-reveal')
 def victim_reveal():
@@ -992,7 +1160,7 @@ def vote():
     # Zurück zur Spielerseite
     voter_char = next((c for c in CHARACTERS if c["id"] == voter_id), None)
     if voter_char:
-        slug = get_player_slug(voter_char, game_state.get("letter_mapping", {}))
+        slug = get_player_slug(voter_char)
         return redirect(url_for('player_view', slug=slug))
 
     return redirect(url_for('index'))
@@ -1097,7 +1265,7 @@ def create_qr_codes_for_players():
 
     for char in active_chars:
         assigned_letter = letter_mapping.get(char["id"], char["letter"])
-        slug = get_player_slug(char, letter_mapping)
+        slug = get_player_slug(char)
         url = base_url + "player/" + slug
         label_text = f"[{assigned_letter}] {char['name']}"
 
@@ -1147,7 +1315,7 @@ def qr_codes():
     player_links = []
     for char in active_chars:
         assigned_letter = letter_mapping.get(char["id"], char["letter"])
-        slug = get_player_slug(char, letter_mapping)
+        slug = get_player_slug(char)
         player_links.append({
             "character": char,
             "url": base_url + "player/" + slug,
