@@ -16,7 +16,7 @@ matplotlib.use('Agg')  # Backend für nicht-interaktive Plots
 # Füge den Parent-Ordner zum Pfad hinzu, um app.py zu importieren
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import CHARACTERS, NPCS, MOTIVE_MATRIX
+from game_data import CHARACTERS, NPCS, MOTIVE_MATRIX
 
 
 def calculate_murder_probabilities():

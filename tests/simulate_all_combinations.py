@@ -20,7 +20,7 @@ from app import (
     CHARACTERS,
     NPCS,
     determine_victim,
-    select_murder_,
+    select_murder,
     MOTIVE_MATRIX
 )
 
@@ -58,7 +58,7 @@ def simulate_all_combinations():
                     victim = determine_victim(event2, event1, event3, seed_tuple)
 
                     # Bestimme den Mörder (gewichtet nach Motiv)
-                    murderer_id = select_murder_(active_chars, seed_tuple, victim)
+                    murderer_id = select_murder(active_chars, seed_tuple, victim)
 
                     # Zähle
                     murderer_counts[murderer_id] += 1

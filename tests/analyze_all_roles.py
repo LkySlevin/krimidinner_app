@@ -24,9 +24,9 @@ matplotlib.use('Agg')  # Backend für nicht-interaktive Plots
 # Füge den Parent-Ordner zum Pfad hinzu, um app.py zu importieren
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from game_data import CHARACTERS, NPCS
 from app import (
-    CHARACTERS, NPCS,
-    select_murder_, select_random_victim,
+    select_murder, select_random_victim,
     select_awakeners, select_special_roles
 )
 
@@ -75,7 +75,7 @@ def analyze_all_scenarios(num_players=10):
                     victim_count[victim['name']] += 1
 
                     # 2. Mörder bestimmen
-                    murderer_id = select_murder_(active_chars, seed_tuple, victim)
+                    murderer_id = select_murder(active_chars, seed_tuple, victim)
                     murderer = next(c for c in active_chars if c['id'] == murderer_id)
                     murderer_count[murderer['name']] += 1
 

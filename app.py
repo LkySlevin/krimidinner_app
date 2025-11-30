@@ -14,296 +14,20 @@ import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import hashlib
 
-app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)  # Für Session-Management
-
-# ============================================================================
-# DATENSTRUKTUREN - HIER KÖNNEN DIE TEXTE ANGEPASST WERDEN
-# ============================================================================
-
-# 10 Spielercharaktere mit Buchstaben-IDs
-CHARACTERS = [
-    {"id": 1, "letter": "A", "name": "Vincent Dubois", "url_slug": "spieler-a"},
-    {"id": 2, "letter": "B", "name": "Alexa Steinberg", "url_slug": "spieler-b"},
-    {"id": 3, "letter": "C", "name": "Viktoria Lang", "url_slug": "spieler-c"},
-    {"id": 4, "letter": "D", "name": "Pater Antonio Benedetti", "url_slug": "spieler-d"},
-    {"id": 5, "letter": "E", "name": "Jazz Monroe", "url_slug": "spieler-e"},
-    {"id": 6, "letter": "F", "name": "Dr. Sarah Chen", "url_slug": "spieler-f"},
-    {"id": 7, "letter": "G", "name": "Luna Silbermann", "url_slug": "spieler-g"},
-    {"id": 8, "letter": "H", "name": "Maximilian 'Max' Gold", "url_slug": "spieler-h"},
-    {"id": 9, "letter": "I", "name": "Tom Greenwood", "url_slug": "spieler-i"},
-    {"id": 10, "letter": "J", "name": "Maria Gonzalez", "url_slug": "spieler-j"}
-]
-
-# 3 NPCs (mögliche Opfer)
-NPCS = {
-    "kueche": {"name": "Jonas Reber", "role": "Koch", "location": "Die alte Eiche"},
-    "klo": {"name": "Viktor Bergmann", "role": "Hotelier", "location": "Die alte Eiche"},
-    "alkohol": {"name": "Dimitri Volkov", "role": "Investor", "location": "Die alte Eiche"}
-}
-
-NPC_PLACEHOLDER_MAP = {
-    "H": {"name": "Der Koch", "tag": "NPC"},
-    "I": {"name": "Die Hausdame", "tag": "NPC"},
-    "J": {"name": "Viktor Bergmann", "tag": "Hotelier"}
-}
-
-# Phase-3-Texte für jeden Charakter (Nachtverhalten + Alibi)
-# HIER KÖNNEN DIE TEXTE INDIVIDUELL ANGEPASST WERDEN
-# Buchstaben A-J entsprechen den Charakteren 1-10
-PHASE3_TEXTS = {
-    1: {  # A  "Frühes Zurückziehen"
-        "nacht": "Du fühlst dich vom Tag erschöpft und gehst früh in dein Zimmer. Du räumst noch kurz etwas auf, sortierst deine Sachen und legst dich nach einem schnellen Blick aus dem Fenster ins Bett. Zum Einschlafen hörst du noch eine Folge der Drei Fragezeichen ???, die Nummer 87, die du so gern magst, auf Spotify.",
-        "alibi": "Auf dem Flur, kurz bevor du dein Zimmer erreichst, siehst du [B] gerade aus dem Bad kommend. Wenige Sekunden später begegnet dir [C] mit einer Wasserflasche in der Hand Richtung Treppe gehend."
-    },
-    2: {  # B "Kurzes Fenster-Ritual"
-        "nacht": "Du kommst gerade aus dem Gemeinschaftsbad. Bevor du ins Bett gehst, bleibst du einen Moment am Fenster stehen, beobachtest wie die Wolken ziehen und holst tief Luft. Danach gehst du auf dein Zimmer. Um besser einschlafen zu können, hörst du dir noch eine Folge der Drei Fragezeichen ??? 69 auf Spotify an.",
-        "alibi": "Auf dem Weg siehst du [A] gerade im Zimmer verschwindend. Als du die Treppe erreichst, begegnet dir [D] die Stufen hinaufgehend."
-    },
-    3: {  # C "Zu viel gegessen"
-        "nacht": "Du hast beim Dinner wohl etwas übertrieben und fühlst dich schwer. Im Zimmer schaltest du den Fernseher kurz ein, zappst durch, doch deine Augen fallen schnell zu.",
-        "alibi": "Im Flur siehst du [A] die Tür hinter sich schließend. Kurz darauf kommt dir [F] entgegen, etwas in der Hand tragend – vielleicht ein Snack."
-    },
-    4: {  # D "Nachttee in der Lounge"
-        "nacht": "Du nimmst dir in der Lounge noch einen Tee  und genießt einen Moment Ruhe. Danach gehst du Richtung Zimmer, stellst dir auf Spotify noch die Drei Fragezeichenfolge ??? 43, The Mystery of the Creep-Show Crooks, an und schläfst sofort ein.",
-        "alibi": "An der Treppe siehst du [B] gerade zum Fenster schauend. Als du oben im Flur ankommst, läuft [G] an dir vorbei und öffnet eine Zimmertür."
-    },
-    5: {  # E "Arbeiten im Zimmer"
-        "nacht": "Du verbringst den späten Abend damit, Dinge zu sortieren, Mails zu beantworten und Dateien zu ordnen. Gegen Mitternacht wirst du müde und legst dich hin. Noch schnell die Drei Fragezeichen ??? Folge 86, deine Lieblingsfolge, angemacht und sofort schläfst du ein.",
-        "alibi": "Bevor du in dein Zimmer gehst, siehst du [G] mit nassen Haaren die Treppe hochkommend. Kurz danach läuft [J] an dir vorbei, sich dabei die Schuhe ausziehend."
-    },
-    6: {  # F - "Letzter Smalltalk"
-        "nacht": "Du triffst auf dem Weg ins Zimmer noch jemanden, wechselst ein paar Worte und gehst dann weiter. Schließlich verschwindest du in deinem Zimmer.",
-        "alibi": "Du siehst [C] schläfrig aufs Zimmer zusteuernd. Außerdem kommt dir [H] entgegen, Notizen unter dem Arm tragend."
-    },
-    7: {  # G - "Badezimmer-Selfie-Session"
-        "nacht": "Du verbringst noch etwas Zeit im Bad vor dem Spiegel, filmst dich oder machst Fotos. Danach gehst du zurück Richtung Zimmer.",
-        "alibi": "Auf dem Rückweg begegnet dir [D] gerade die Zimmertür aufschließend. Vor der Treppe siehst du [E] mit müdem Blick hochgehend."
-    },
-    8: {  # H - "Arbeiten an Notizen"
-        "nacht": "Im Zimmer schreibst du ein paar Gedanken auf, sortierst deine Ideen und bereitest dich mental auf den nächsten Tag vor.",
-        "alibi": "Auf dem Flur siehst du [F] gerade den Gang entlanggehend. Kurz darauf kommt dir [I] entgegen, still vor sich hin summend."
-    },
-    9: {  # I - "Glas Wein & Ritual"
-        "nacht": "Du gönnst dir ein Glas Wein, legst ein kleines Erinnerungsstück auf das Bett und versinkst in deinen Gedanken.",
-        "alibi": "Auf dem Weg zurück zum Zimmer begegnest du [H] noch Notizen in der Hand haltend. Kurz darauf kommt dir [J] entgegen, die Treppe hochsteigend."
-    },
-    10: {  # J - "Musik & Handy-Scrollen"
-        "nacht": "Du hörst Musik, scrollst durch dein Handy und siehst dir die Aufnahmen des Abends an. Schließlich wirst du müde und legst dich hin. Noch schnell die Drei Fragezeichen ??? Folge 62 angemacht und schon schläfst du ein.",
-        "alibi": "An der Treppe siehst du [E] müde die Stufen nehmend. Im Flur siehst du [I] leise summend ins Zimmer gehend."
-    }
-}
-
-# Texte für Mörder Unschuldige
-MURDER_TEXT_TEMPLATE = """
-<div class="innocent-info">
-    <h2>⚠️ Deine Rolle</h2>
-
-    <div style="margin-top: 20px;">
-        {abendverlauf}
-    </div>
-
-    <div style="margin-top: 20px; padding: 15px; background: #2c3e50; border-radius: 5px;">
-        <p><strong style="color: #e74c3c;">Du bist der Mörder.</strong></p>
-
-        <p>Du wusstest es bereits seit deiner Einladung, du kennst jedes dieser Daten auswendig und doch hast du die Einladung angenommen. Du hättest auch bei der Wahl des Zimmers darauf achten können oder die Vorhänge zuziehen als du dich ins Bett gelegt hast - hast du aber nicht und das obwohl es genau hier vor 3 Jahren schonmal passiert ist.</p>
-
-        <p>Während du schläfst, trifft ein kurzer Moment des klaren Vollmondlichts durch das leichte Schneetreiben dein Zimmer. Es reicht – dein Körper verändert sich.</p>
-
-        <p>Du stehst auf und trittst auf den Balkon, da passiert es, du verwandelst dich und merkst wie du teilweise nicht mehr Herr deiner Sinne bist. Du wirst zum Werwolf!</p>
-
-        <p>Dieses Wesen ist schnell, stark und tödlich – aber nur solange der Mond dich direkt trifft.</p>
-
-        <p>Der Mond beleuchtet die Szenerie vor dir. Schneetreiben, der Bach und der Wald dahinter der sich meilenweit erstreckt. Du legst deine nun zu kleine Kleidung ab und springst vom Balkon im ersten Stock in den Schnee und gehst Richtung Wald. Doch plötzlich triffst du auf <strong>{victim_name}</strong>.</p>
-
-        {motive_text}
-
-        <p>Das Opfer schreit laut auf als es sein Schicksal als besiegelt sieht. Der Mord geschieht in einem einzigen, brutalen Augenblick:</p>
-
-        <p style="text-align: center; font-weight: bold; margin: 15px 0;">ein extrem starker stumpfer Schlag gegen die Brust</p>
-
-        <p>Rippen brechen, eine davon durchstößt das Herz, der Tod tritt sofort ein.<br>
-        In deinem Rausch wirfst du den leblosen Körper nach oben – er landet über einem Ast in zwei Metern Höhe, wo er hängen bleibt.</p>
-
-        <p>Es ist schon wieder passiert - kurz kommt dein menschliches Wesen in dir zurück und dir wird klar, den Schrei muss jemand gehört. Du musst unbemerkt in dein Zimmer - so schnell wie möglich. Du bewegst dich mit übermenschlicher Geschwindigkeit zurück:</p>
-
-        <ul style="margin-left: 20px;">
-            <li>deine gigantischen, barfüßigen Abdrücke (Schuhgröße 49) führen bis zum Bach</li>
-            <li>dort verlieren sie sich am/im Wasser</li>
-            <li>du rennst stromabwärts, Richtung Straße</li>
-            <li>und gelangst über die Hotelfassade wieder auf deinen 2. Balkon der in eine andere Himmelsrichtung zeigt - zum Glück hast du die Executive Suite bekommen ;)</li>
-        </ul>
-
-        <p>In diesem Moment hörst du einen weiteren Schrei draußen – die Hausdame hat die Leiche gefunden.</p>
-
-        <p>Sobald du das Innere erreichst, verschwindet die Verwandlung – glücklicherweise ziehen gerade die Wolken auf und verdecken den Mond. Du hast heute keine weitere Verwandlung mehr zu befürchten.</p>
-
-        <p>Nun nochmal Geschrei und aufgeregte Stimmen im Flur als sich alle Richtung Foyer bewegen auch du ziehst dich schnell an und bewegst dich aus dem Zimmer mit den restlichen Leuten ins Foyer.</p>
-
-        <p style="font-weight: bold; margin-top: 20px;">Niemand hat dich gesehen.<br>
-        Niemand weiß, dass du es warst.<br>
-        Bestreite immer alles - es gibt keine eindeutigen Beweise! Oder doch?</p>
-    </div>
-</div>
-"""
-
-INNOCENT_TEXT_TEMPLATE = """
-<div class="innocent-info">
-    <h2>✓ Deine Rolle</h2>
-
-    <div style="margin-top: 20px;">
-        {abendverlauf}
-    </div>
-
-    <div style="margin-top: 20px; padding: 15px; background: #2c3e50; border-radius: 5px;">
-        <p>Du schläfst fest, während draußen der Schneesturm stärker wird.<br>
-        Den ersten Schrei bekommst du nicht mit – der Wind ist zu laut, der Schlaf zu tief.</p>
-
-        <p>Doch du hast einen seltsamen Traum:</p>
-
-        <div style="background: #34495e; padding: 15px; margin: 15px 0; border-left: 4px solid #3498db; font-style: italic;">
-            {dream_text}
-        </div>
-
-        <p>Erst als ein zweiter, panischer Schrei aus der Nähe der Empfangshalle ertönt, reißt es dich aus dem Schlaf.<br>
-        Du fühlst dich merkwürdig unruhig, als hättest du schlecht geträumt - hast du ja auch.</p>
-
-        <p>Ohne weiter nachzudenken ziehst du dich schnell an und machst dich auf den Weg nach unten, um herauszufinden, was passiert ist.</p>
-    </div>
-</div>
-"""
-
-# Traum-Texte für jeden Charakter (für alle Unschuldigen in Phase 3)
-DREAM_TEXTS = {
-    1: "Du träumst, dass du durch einen langen Hotelkorridor gehst. Hinter jeder Tür hörst du Stimmen deiner früheren Klienten, die deinen Namen flüstern. Je weiter du gehst, desto lauter werden sie. Am Ende öffnest du eine Tür – aber dahinter ist nur ein leerer, kalter Wald.",
-    2: "Du siehst vor dir einen riesigen Serverraum, aber alle Bildschirme zeigen nur Schneerauschen. Zwischen den Regalen hörst du Schritte. Du rennst los, doch jedes Mal, wenn du eine Ecke erreichst, ist dein Weg blockiert – von nichts als dichter, grauer Nebel.",
-    3: "Du sitzt bei einer Bürgerversammlung, aber alle Menschen haben verschwommene Gesichter. Jemand stellt dir eine Frage, doch du verstehst kein Wort. Die Menge rückt näher, lautlos, bis dich ein heller Lichtstrahl blendet und du allein in einem verschneiten Tal stehst.",
-    4: "Du stehst in einer alten Kapelle. Kerzen brennen, doch keine spendet Wärme. Eine Orgel spielt leise Töne, die du nicht kennst. Als du näher trittst, siehst du einen geöffneten Beichtstuhl – darin sitzt niemand, aber die Tür schwingt langsam hin und her.",
-    5: "Du stehst auf einer Bühne, aber der Saal ist komplett dunkel. Du hörst Applaus, doch jedes Mal, wenn du ins Licht trittst, verstummt er sofort. Als du ein letztes Mal die Hand hebst, bricht plötzlich ein kalter Wind durch den Raum und löscht alles aus.",
-    6: "Du stehst in einem Behandlungszimmer, doch statt Patienten liegen dort verschneite Äste auf der Liege. Du willst sie berühren, aber sie zerfallen zu Frost. Aus der Ferne hörst du einen Herzmonitor, doch der Rhythmus ist unnatürlich schnell – bis er abrupt stoppt.",
-    7: "Du wanderst über eine Mondlicht-helle Schneefläche. Über dir dreht sich ein riesiges, silbriges Rad wie eine Uhr. Die Zeit springt unregelmäßig, vor und zurück, und jedes Mal stehst du an einem anderen Ort – immer wieder vor derselben verschlossenen Holztür.",
-    8: "Du stehst auf einem perfekten Golfplatz. Als du zum Abschlag ansetzt, verwandelt sich das Fairway plötzlich in eine endlose Schneelandschaft. Der Ball rollt weit weg, immer schneller, bis er in einem dunklen Loch verschwindet. Als du hineinsiehst, ist dort nur Leere.",
-    9: "Du läufst durch einen stillen Wald. Der Schnee fällt lautlos und dämpft jeden Schritt. Doch plötzlich hörst du hinter dir knackende Äste, als würde etwas Großes durch das Unterholz streifen. Du drehst dich um – aber der Wald ist vollkommen leer.",
-    10: "Du sitzt vor einer endlosen Reihe von Dokumenten, Sprachen mischen sich ineinander, Schriftzeichen flackern. Als du versuchst, einen Satz zu übersetzen, löst er sich in Schnee auf. Ein einzelnes Wort bleibt zurück, aber du kannst es nicht lesen."
-}
-
-MOTIVE_MATRIX = {
-    1: {
-        "Dimitri Volkov": "Dimitri könnte über Elise von deiner Betrugsmasche erfahren haben. Du gehst kein Risiko ein."
-    },
-    2: {
-        "Viktor Bergmann": "Viktor hat deine KI-Pilotierung abgelehnt, deine Firma steht vor dem Aus. Dann muss er halt mit seinem Leben bezahlen.",
-    },
-    3: {
-        "Dimitri Volkov": "Dimitri könnte deine veruntreuten Gelder öffentlich machen - er weiß zuviel.",
-    },
-    4: {
-        "Jonas Reber": "Jonas Filme können dich wenn sie online gehen kompromittieren oder lächerlich darstellen. Der Herr wird es verstehen."
-    },
-    5: {
-        "Viktor Bergmann": "Viktor bezahlt dich nicht fair für Promo und hat dich ausgenutzt. Du zeigst ihm, was du davon hältst.",
-        "Jonas Reber": "Jonas hat versucht dir Follower abzuluchsen - das muss er mit dem Leben bezahlen."
-    },
-    6: {
-        "Jonas Reber": "Jonas hat dir heute schon wieder den Vorwuf gemacht am Tod seines Vaters Schuld gehabt zu haben. Genug ist genug.",
-    },
-    7: {
-        "Viktor Bergmann": "Du siehst ihn in Verantwortung für den Tod ihres Vaters und Tante damals im Jahr 1991.",
-        "Jonas Reber": "Jonas kocht zu selten mit Bio-Zutaten und zu wenige vegetarische Gerichte. Mit Leuten wie ihm geht die Welt den Bach runter."
-    },
-    8: {
-        "Viktor Bergmann": "Viktor interessiert sich nicht nur nicht für deinen Golfplatz - er hat sich auch lächerlich über deine Abschlagweite gemacht. Mal sehen was er von diesem Schlag hält!",
-        "Dimitri Volkov": "Du schuldest ihm immernoch eine Menge Geld, was du ihm wohl nie zurückzahlen kannst."
-    },
-    9: {
-        "Jonas Reber": "Jonas Müll (z.B. Fritteuse) im Wald verärgert dich massiv. Solche Leute gehören bestraft.",
-        "Dimitri Volkov": "Dimitri steht für große Eingriffe in Naturschutzgebiete. Er muss gestoppt werden."
-    },
-    10: {
-        "Dimitri Volkov": "Er weiß über den KGB über deine Machenschaften Bescheid. Ein Gehemnis das er mit ins Grab nehmen wird.",
-        "Viktor Bergmann": "Du hast noch einmal recherchiert, Viktor hat mehr Dreck am Stecken als gedacht. Zeit, dass jemand ihm eine Lektion erteilt."
-    }
-}
-
-DEFAULT_MOTIVE_TEXT = (
-    "Man hat dich gesehen, du weißt nicht was du tun sollst, kurz schaut ihr euch starr vor Schreck in die Augen. "
-    "Dann übernehmen deine Instinkte und du schlägst mit voller Wucht zu."
+# Import von Datenstrukturen und Textbausteinen
+from game_data import (
+    CHARACTERS, NPCS, NPC_PLACEHOLDER_MAP,
+    MOTIVE_MATRIX, DEFAULT_MOTIVE_TEXT,
+    MURDER_CLUES, RED_HERRING_CLUES
+)
+from game_texts import (
+    PHASE3_TEXTS, MURDER_TEXT_TEMPLATE, INNOCENT_TEXT_TEMPLATE,
+    DREAM_TEXTS, DESPERATE_DREAM_SUFFIX, INTRIGANT_DREAM_TEMPLATE,
+    LOVER_DREAM_TEMPLATE, AWAKENING_TEXT_TEMPLATE
 )
 
-# Spezielle Traumtext-Suffixe für besondere Rollen
-DESPERATE_DREAM_SUFFIX = """
-
-<div style="background: #8b0000; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff0000;">
-    <p style="color: #ffff00; font-weight: bold; font-size: 1.2em;">⚠️ TRIGGERWARNUNG: Suizidgedanken ⚠️</p>
-
-    <p style="color: #ffffff;">Als du aus dem Traum erwachst, überkommt dich eine tiefe Verzweiflung. Dein ganzes Leben lang hattest du Pech – immer wieder Rückschläge, Enttäuschungen, verlorene Chancen. Und jetzt dieser Traum, der dir den letzten Lebenssinn nimmt.</p>
-
-    <p style="color: #ffffff;">Ein dunkler Gedanke formt sich in deinem Kopf: <em>Was, wenn das die Gelegenheit ist, allem ein Ende zu setzen?</em></p>
-
-    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Du willst als Mörder identifiziert werden. Wenn die Gruppe dich beschuldigt, akzeptierst du es – es ist ein Ausweg, den du unbewusst suchst.</p>
-
-    <div style="background: #ffffff; padding: 15px; margin-top: 20px; border-radius: 5px; color: #000000;">
-        <p style="font-weight: bold; margin-bottom: 10px;">📞 WICHTIG - Wenn du selbst Hilfe brauchst:</p>
-        <p style="margin: 5px 0;"><strong>Telefonseelsorge Deutschland:</strong></p>
-        <p style="margin: 5px 0;">☎ 0800 / 111 0 111 (evangelisch)</p>
-        <p style="margin: 5px 0;">☎ 0800 / 111 0 222 (katholisch)</p>
-        <p style="margin: 5px 0;"><strong>24 Stunden erreichbar, kostenlos & anonym</strong></p>
-        <p style="margin-top: 10px;"><strong>Schweiz:</strong> ☎ 143</p>
-        <p style="margin: 5px 0;"><strong>Österreich:</strong> ☎ 142</p>
-    </div>
-</div>
-"""
-
-INTRIGANT_DREAM_TEMPLATE = """
-
-<div style="background: #2c2c2c; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff8c00;">
-    <p style="color: #ff8c00; font-weight: bold; font-size: 1.2em;">🎭 DEINE GEHEIME ROLLE: DER INTRIGANT</p>
-
-    <p style="color: #ffffff;">Im Traum siehst du das Gesicht von <strong>{target_name}</strong> vor dir. Alle negativen Emotionen, die du jemals dieser Person gegenüber empfunden hast, kochen in diesem Moment hoch. Du kannst diese Person nicht leiden – vielleicht aus einem bestimmten Grund, vielleicht einfach nur so.</p>
-
-    <p style="color: #ffffff;">Als du aufwachst, wird dir klar: <em>Bei der nächsten Gelegenheit schlage ich zu.</em></p>
-
-    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Hänge <strong>{target_name}</strong> den Mord an! Sammle Indizien, streue Gerüchte, lenke Verdächtigungen. Ob diese Person wirklich der Mörder ist oder nicht – es ist dir egal. Du willst {target_name} leiden sehen.</p>
-
-    <p style="color: #cccccc; font-style: italic;">Hinweis: Falls {target_name} zufällig tatsächlich der Mörder ist, umso besser – dann erreichst du dein Ziel mit der Wahrheit.</p>
-</div>
-"""
-
-LOVER_DREAM_TEMPLATE = """
-
-<div style="background: #4a0e4e; padding: 20px; margin: 20px 0; border-radius: 8px; border: 2px solid #ff1493;">
-    <p style="color: #ff1493; font-weight: bold; font-size: 1.2em;">💕 DEINE GEHEIME ROLLE: DER/DIE VERLIEBTE</p>
-
-    <p style="color: #ffffff;">In deinem Traum erscheint <strong>{lover_name}</strong> – nicht bedrohlich, sondern warm, vertraut, anziehend. Ihr begegnet euch in einer verschneiten Landschaft, und plötzlich spürst du eine tiefe Verbundenheit, die du dir vorher nicht erklären konntest.</p>
-
-    <p style="color: #ffffff;">Als der Traum endet, bleibt dieses Gefühl. Du weißt intuitiv: <em>{lover_name} hat das Gleiche geträumt.</em></p>
-
-    <p style="color: #ffffff; font-weight: bold;">🎯 DEIN GEHEIMES ZIEL: Ihr beide müsst überleben! Schützt euch gegenseitig, lenkt Verdächtigungen von {lover_name} ab, kommuniziert subtil. Ob einer von euch der Mörder ist oder nicht – spielt keine Rolle. Ihr gehört zusammen.</p>
-
-    <p style="color: #ffb3d9; font-style: italic;">Hinweis: Suche heute Vormittag nach Gelegenheiten, mit {lover_name} zu sprechen. Ein Blick, eine Geste – ihr werdet euch verstehen.</p>
-</div>
-"""
-
-
-# Phase-4-Text für Aufwachende (die beim ersten Schrei aufwachen)
-AWAKENING_TEXT_TEMPLATE = """
-<div class="awakening-info" style="background: #34495e; padding: 20px; border-radius: 8px; margin: 20px 0;">
-    <h2 style="color: #e74c3c;">🌙 Du wachst auf beim ersten Schrei</h2>
-    <p>Während du schläfst, beginnt draußen der Wind stärker zu werden. Plötzlich – irgendwo in der Ferne – hörst du einen kurzen, erstickten Schrei, gefolgt von einem dumpfen Schlag.</p>
-
-    <p>Durch das Schneetreiben ist das Geräusch schwer einzuordnen, und der Wind wirft es chaotisch gegen die Fassade. Du bist dir nicht sicher, ob du es dir eingebildet hast.</p>
-
-    <p>Du drehst dich um, versuchst wieder einzuschlafen… aber du hast einen seltsamen Traum:</p>
-
-    <div style="background: #2c3e50; padding: 15px; margin: 15px 0; border-left: 4px solid #e74c3c; font-style: italic;">
-        {dream_text}
-    </div>
-
-    <p><strong>Nach wenigen Minuten hörst du erneut etwas:</strong> ein panischer, klarer Schrei aus der Nähe der Empfangshalle. Jetzt ist klar: irgendetwas ist passiert.</p>
-
-    <p>Du stehst auf, ziehst dich hastig an und machst dich auf den Weg nach unten, um herauszufinden, was los ist.</p>
-</div>
-"""
+app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)  # Für Session-Management
 
 # ============================================================================
 # SPIELZUSTAND (wird im Session gespeichert oder als globale Variable)
@@ -553,6 +277,7 @@ def select_special_roles(active_characters, murder_id):
     - Verliebtes Paar (wollen gemeinsam überleben)
 
     Alle außer dem Mörder können diese Rollen bekommen.
+    Der Intrigant darf aber jede beliebige Zielperson wählen – inklusive des Mörders.
     Die Auswahl ist nicht Seed-basiert, sondern bei jedem Spielstart neu zufällig.
     """
     # Alle außer dem Mörder
@@ -563,21 +288,178 @@ def select_special_roles(active_characters, murder_id):
         return None, None, None, []
 
     # Mische die Unschuldigen (echt zufällig, kein Seed)
-    available = innocents.copy()
-    random.shuffle(available)
+    available_innocents = innocents.copy()
+    random.shuffle(available_innocents)
 
     # 1. Intrigant + Ziel auswählen
-    intrigant = available.pop(0)
-    intrigant_target = available.pop(0)
+    intrigant = available_innocents.pop(0)
+
+    # Ziel kann jede Person außer dem Intriganten sein (inkl. Mörder)
+    target_pool = [char for char in active_characters if char["id"] != intrigant["id"]]
+    random.shuffle(target_pool)
+    intrigant_target = target_pool.pop(0)
 
     # 2. Verzweifelte Person auswählen
-    desperate = available.pop(0)
+    desperate = available_innocents.pop(0)
 
     # 3. Verliebtes Paar auswählen (2 Personen)
-    lover1 = available.pop(0)
-    lover2 = available.pop(0)
+    lover1 = available_innocents.pop(0)
+    lover2 = available_innocents.pop(0)
 
     return intrigant["id"], intrigant_target["id"], desperate["id"], [lover1["id"], lover2["id"]]
+
+def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids):
+    """
+    Generiert Erinnerungen für ALLE Unschuldigen:
+    - 2-3 bekommen Hinweise über den Mörder
+    - Restliche bekommen Red Herrings über andere Spieler
+
+    Args:
+        active_chars: Liste aktiver Charaktere
+        murder_id: ID des Mörders
+        seed_tuple: Seed für Reproduzierbarkeit
+        special_role_ids: Dict mit intrigant_id, desperate_id, lovers
+
+    Returns:
+        dict: {
+            char_id: {
+                "subject_id": int,      # Über wen ist die Erinnerung
+                "clue_id": int,         # Welcher Hinweis
+                "is_murderer": bool     # Ist subject der Mörder?
+            }
+        }
+    """
+    import random
+    # Erweitere Seed mit "memories" Suffix für eindeutige Zufallsfolge
+    memory_seed = hash(tuple(list(seed_tuple) + ["memories"]))
+    rng = random.Random(memory_seed)
+
+    # Sammle IDs die KEINE Erinnerungen bekommen
+    excluded_from_memories = {murder_id}
+    if special_role_ids.get("intrigant_id"):
+        excluded_from_memories.add(special_role_ids["intrigant_id"])
+    if special_role_ids.get("desperate_id"):
+        excluded_from_memories.add(special_role_ids["desperate_id"])
+
+    # Spieler die Erinnerungen bekommen
+    memory_receivers = [c for c in active_chars if c['id'] not in excluded_from_memories]
+
+    if len(memory_receivers) == 0:
+        return {}
+
+    # Anzahl echter Mörder-Hinweise begrenzen:
+    # - bis inkl. 8 Spieler: 2
+    # - ab 9 Spielern: 3
+    target_true = 2 if len(active_chars) <= 8 else 3
+    num_true_witnesses = min(target_true, len(memory_receivers))
+    true_witnesses = rng.sample(memory_receivers, num_true_witnesses)
+    true_witness_ids = [w['id'] for w in true_witnesses]
+
+    # Restliche Spieler bekommen Red Herrings
+    red_herring_receivers = [c for c in memory_receivers if c['id'] not in true_witness_ids]
+
+    memories = {}
+    lovers = special_role_ids.get("lovers", [])
+
+    # 1. Vergebe echte Mörder-Hinweise
+    used_clues_true = set()
+    for witness in true_witnesses:
+        # Wähle zufälligen Hinweis (ohne Wiederholung)
+        available_clues = [i for i in range(1, len(MURDER_CLUES) + 1) if i not in used_clues_true]
+        if not available_clues:
+            used_clues_true.clear()  # Reset wenn alle verwendet
+            available_clues = list(range(1, len(MURDER_CLUES) + 1))
+
+        clue_id = rng.choice(available_clues)
+        used_clues_true.add(clue_id)
+
+        memories[witness['id']] = {
+            "subject_id": murder_id,
+            "clue_id": clue_id,
+            "is_murderer": True,
+            "clue_pool": "murder"
+        }
+
+    # 2. Vergebe Red Herring Hinweise
+    used_clues_red = set()
+    for receiver in red_herring_receivers:
+        receiver_id = receiver['id']
+
+        # Mögliche Subjekte: Alle AUSSER sich selbst, Partner (falls Lover), und ausgeschlossene
+        possible_subjects = []
+        for char in active_chars:
+            # Ausschließen: sich selbst
+            if char['id'] == receiver_id:
+                continue
+
+            # Ausschließen: eigener Partner (falls Lover)
+            if receiver_id in lovers and char['id'] in lovers:
+                # Beide sind Lover, also Partner
+                continue
+
+            possible_subjects.append(char['id'])
+
+        if not possible_subjects:
+            continue  # Keine verfügbaren Subjekte
+
+        # Wähle zufälliges Subjekt
+        subject_id = rng.choice(possible_subjects)
+
+        # Wähle zufälligen Hinweis
+        available_clues = [i for i in range(1, len(RED_HERRING_CLUES) + 1) if i not in used_clues_red]
+        if not available_clues:
+            used_clues_red.clear()
+            available_clues = list(range(1, len(RED_HERRING_CLUES) + 1))
+
+        clue_id = rng.choice(available_clues)
+        used_clues_red.add(clue_id)
+
+        memories[receiver_id] = {
+            "subject_id": subject_id,
+            "clue_id": clue_id,
+            "is_murderer": (subject_id == murder_id),  # Könnte zufällig Mörder treffen
+            "clue_pool": "red"
+        }
+
+    return memories
+
+
+def build_memory_text(clue_id, subject_id, letter_mapping, clue_pool="murder"):
+    """
+    Erstellt den Erinnerungstext.
+
+    Args:
+        clue_id: ID des Hinweises
+        subject_id: ID der Person über die der Hinweis ist
+        letter_mapping: Letter-Mapping aus game_state
+        clue_pool: "murder" oder "red" für den Hinweis-Pool
+
+    Returns:
+        str: Formatierter HTML-Text
+    """
+    # Wähle Pool
+    pool = MURDER_CLUES if clue_pool == "murder" else RED_HERRING_CLUES
+
+    # Finde Hinweis
+    clue = next((c for c in pool if c['id'] == clue_id), None)
+    if not clue:
+        return ""
+
+    # Finde Subjekt
+    subject_char = next((c for c in CHARACTERS if c['id'] == subject_id), None)
+    if not subject_char:
+        return ""
+
+    subject_name = subject_char['name']
+    subject_firstname = subject_char["name"].split(" ")[0]
+
+    # Ersetze Platzhalter
+    detail_text = clue['detail'].format(
+        subject_name=subject_name,
+        subject_firstname=subject_firstname
+    )
+
+    return detail_text
 
 def determine_victim(first_event2, first_event1, first_event3, seed_tuple):
     """
@@ -610,10 +492,9 @@ def build_phase5_intro_speech(victim):
     """Erstellt die einleitende Rede für Phase 5 (vor der Abstimmung)."""
     # Bestimme, wer die Abstimmung einfordert (Hotelbesitzer oder falls tot, der Investor)
     if victim and victim.get("name") == "Viktor Bergmann":
-        speaker = "Der russische Investor"
+        speaker = "Dimitri"
     else:
-        speaker = "Der langjährige Hotelbesitzer"
-
+        speaker = "Viktor Bergmann"
     speech = f'''
     <div class="phase5-intro" style="background: #2c3e50; padding: 20px; border-radius: 8px; margin-top: 25px;">
         <h3 style="margin-top: 0;">Phase 5 - Die Anklage</h3>
@@ -635,7 +516,111 @@ def build_phase5_intro_speech(victim):
     '''
     return speech
 
-def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim):
+def build_special_outcome_notes(accused_id, letter_mapping, game_state):
+    """
+    Baut Zusatztext für das Urteil, abhängig von Spezialrollen:
+    - Liebespaar: Partner bricht zusammen, wenn einer stirbt (inline; Shot/Hang unterschiedlich); überleben beide, ziehen sie sich später zusammen zurück
+    - Verzweifelte Person: stilles Lächeln am Galgen; sonst geht sie mit hängendem Kopf
+    - Intrigant: Humbug-Kommentar bei Fehlurteil, zufrieden-gute-Nacht bei Erfolg
+    """
+    lover_inline_shot = ""
+    lover_inline_hang = ""
+    lover_survivor_note = ""
+    inline_notes = []
+    end_notes = []
+
+    lovers = game_state.get("lovers", [])
+    if accused_id in lovers and len(lovers) == 2:
+        partner_id = lovers[0] if lovers[1] == accused_id else lovers[1]
+        partner_char = get_character_by_id(partner_id)
+        partner_letter = letter_mapping.get(partner_id, partner_char["letter"] if partner_char else "?")
+        partner_name = partner_char["name"] if partner_char else "Unbekannt"
+        lover_inline_shot = (
+            f"Als der Schuss fällt, bricht {partner_name} [{partner_letter}] schluchzend zusammen "
+            "und muss von den anderen zurückgehalten werden. Die große Liebe starb, bevor ein offenes Geständnis möglich war."
+        )
+        lover_inline_hang = (
+            f"Als der Strick sich zuzieht, bricht {partner_name} [{partner_letter}] schluchzend zusammen "
+            "und muss von den anderen zurückgehalten werden. Die große Liebe starb, bevor ein offenes Geständnis möglich war."
+        )
+    elif len(lovers) == 2:
+        # Beide haben überlebt
+        lover1 = get_character_by_id(lovers[0])
+        lover2 = get_character_by_id(lovers[1])
+        letter1 = letter_mapping.get(lovers[0], lover1["letter"] if lover1 else "?")
+        letter2 = letter_mapping.get(lovers[1], lover2["letter"] if lover2 else "?")
+        name1 = lover1["name"] if lover1 else "Unbekannt"
+        name2 = lover2["name"] if lover2 else "Unbekannt"
+        lover_survivor_note = (
+            f"Später schleichen {name1} [{letter1}] und {name2} [{letter2}] leise auf dasselbe Zimmer, "
+            "dankbar, dass sie die Nacht gemeinsam überstanden haben."
+        )
+
+    if accused_id == game_state.get("desperate_id"):
+        end_notes.append(
+            "Die Verzweifelte Person trägt im letzten Moment ein kaum merkliches, friedliches Lächeln – als wäre genau dieses Ende erwartet worden."
+        )
+    elif game_state.get("desperate_id"):
+        desperate_char = get_character_by_id(game_state["desperate_id"])
+        desperate_letter = letter_mapping.get(
+            game_state["desperate_id"], desperate_char["letter"] if desperate_char else "?"
+        )
+        desperate_name = desperate_char["name"] if desperate_char else "Unbekannt"
+        end_notes.append(
+            f"{desperate_name} [{desperate_letter}] verlässt die Szene mit hängendem Kopf und schleppt sich wortlos in ihr Zimmer."
+        )
+
+    intrigant_id = game_state.get("intrigant_id")
+    intrigant_target = game_state.get("intrigant_target_id")
+    if intrigant_id and intrigant_id != accused_id:
+        intrigant_char = get_character_by_id(intrigant_id)
+        intrigant_letter = letter_mapping.get(intrigant_id, intrigant_char["letter"] if intrigant_char else "?")
+        intrigant_name = intrigant_char["name"] if intrigant_char else "Unbekannt"
+        if intrigant_target == accused_id:
+            end_notes.append(
+                f"{intrigant_name} [{intrigant_letter}] wünscht dem Rest mit einem zufriedenen Grinsen eine gute Nacht – der Plan ist aufgegangen."
+            )
+        else:
+            inline_notes.append(
+                f"{intrigant_name} [{intrigant_letter}] brummt enttäuscht: „Ach, ist doch alles Humbug“, und zieht sich zurück."
+            )
+
+    intr_success_flag = any("Plan ist aufgegangen" in n for n in end_notes)
+    desp_success_flag = any("friedliches Lächeln" in n for n in end_notes)
+
+    intr_success_text = next((n for n in end_notes if "Plan ist aufgegangen" in n), "")
+    desp_success_text = next((n for n in end_notes if "friedliches Lächeln" in n), "")
+    intr_fail_text = next((n for n in inline_notes if "Humbug" in n), "")
+    desp_fail_text = next((n for n in end_notes if "hängendem Kopf" in n), "")
+
+    intr_desp_success = ""
+    intr_desp_fail = ""
+    intr_success = ""
+    desp_success = ""
+
+    if intr_success_flag and desp_success_flag:
+        parts = [p for p in [intr_success_text, desp_success_text] if p]
+        intr_desp_success = "<p>" + "</p><p>".join(parts) + "</p>"
+    elif intr_success_flag and not desp_success_flag:
+        intr_success = f"<p>{intr_success_text}</p>" if intr_success_text else ""
+    elif desp_success_flag and not intr_success_flag:
+        desp_success = f"<p>{desp_success_text}</p>" if desp_success_text else ""
+    else:
+        fail_parts = [p for p in [intr_fail_text, desp_fail_text] if p]
+        intr_desp_fail = "<p>" + "</p><p>".join(fail_parts) + "</p>" if fail_parts else ""
+
+    return (
+        lover_inline_shot,
+        lover_inline_hang,
+        lover_survivor_note,
+        intr_desp_success,
+        intr_desp_fail,
+        intr_success,
+        desp_success,
+    )
+
+
+def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim, game_state):
     """Erstellt den Phase-5-Ergebnis-Text nach der Abstimmung (ohne die einleitende Rede)."""
     if not accused_char or is_correct is None:
         return None
@@ -650,18 +635,38 @@ def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim):
         speaker_lower = "der Hotelbesitzer"
 
 
+    (
+        lover_inline_shot,
+        lover_inline_hang,
+        lover_survivor_note,
+        intr_desp_success,
+        intr_desp_fail,
+        intr_success,
+        desp_success,
+    ) = build_special_outcome_notes(
+        accused_char["id"], letter_mapping, game_state
+    )
+
     if is_correct:
         outcome = f'''
-        <p>Doch so leicht gibt <strong>{accused_display}</strong> nicht auf und ruft: "Denkt ihr normalsterblichen ihr könntet einen Werwolf einfach erhängen?".
+        <p>Doch so leicht gibt <strong>{accused_display}</strong> nicht auf und ruft: "Denkt ihr Normalsterblichen, ihr könntet einen Werwolf einfach erhängen?".
         Doch noch bevor es zu einem weiteren Wort oder Tumult kommen kann, knallt es Ohrenbetäubend laut. Ein greller Blitz durchzuckt den Raum und ein markerschütternder Schrei erfüllt die Luft.
-        Helga hält die Flinte noch in der Hand aus dessen Lauf es raucht. Die Flinte war mit Silberkugeln geladen gewesen.</p>
+        Helga hält die Flinte noch in der Hand aus dessen Lauf es raucht. Die Flinte hatte Silberkugeln geladen.</p>
+        {'<p>' + lover_inline_shot + '</p>' if lover_inline_shot else ''}
+        {intr_desp_success or intr_success or intr_desp_fail}
+        {desp_success if not intr_desp_success else ''}
+        {'<p>' + lover_survivor_note + '</p>' if lover_survivor_note else ''}
         <p>Der Schrecken scheint endgültig besiegt und der Fluch des Hotels gebrochen. Alle nehmen das Geheimnis mit ins Grab und hoffen nun auf einen ruhigen Schlaf.</p>
         '''
     else:
         # Großschreibung für Satzanfang
         speaker_capitalized = speaker_lower.capitalize()
         outcome = f'''
-        <p>{speaker_capitalized} schlägt <strong>{accused_display}</strong> mit einem Knüppel auf den Hinterkopf und zusammen mit den anderen Bediensteten wird <strong>{accused_display}</strong> mit einem Seil am selben Ast aufgehängt. <strong>Nach wenigen Minuten ist alles vorbei.</strong></p>
+        <p>{speaker_capitalized} schlägt <strong>{accused_display}</strong> mit einem Knüppel auf den Hinterkopf und zusammen mit den anderen Bediensteten wird <strong>{accused_display}</strong> mit einem Seil am selben Ast aufgehängt. 
+        {' ' + lover_inline_hang if lover_inline_hang else ''} <strong>Nach wenigen Minuten ist alles vorbei.</strong></p>
+        {intr_desp_success or intr_success or intr_desp_fail}
+        {desp_success if not intr_desp_success else ''}
+        {'<p>' + lover_survivor_note + '</p>' if lover_survivor_note else ''}
         <p>Völlig erschöpft gehen alle zu Bett und schlafen den Schlaf der Gerechten... bis die Wolken sich wieder verziehen und ein weiterer Schrei die vollmondhelle Nacht durchhallt.</p>
         '''
 
@@ -678,7 +683,7 @@ def build_phase5_outcome_text(accused_char, letter_mapping, is_correct, victim):
     return html_content
 
 
-def get_personal_outcome(character_id, accused_id, murderer_id, letter_mapping):
+def get_personal_outcome(character_id, accused_id, murder_id, letter_mapping):
     """
     Erstellt eine personalisierte Erfolgsmeldung für einen Spieler basierend auf seinen Zielen.
 
@@ -697,7 +702,7 @@ def get_personal_outcome(character_id, accused_id, murderer_id, letter_mapping):
     desperate_id = game_state.get("desperate_id")
     lovers = game_state.get("lovers", [])
 
-    is_murderer = (character_id == murderer_id)
+    is_murderer = (character_id == murder_id)
     is_accused = (character_id == accused_id)
     is_intrigant = (character_id == intrigant_id)
     is_desperate = (character_id == desperate_id)
@@ -724,14 +729,14 @@ def get_personal_outcome(character_id, accused_id, murderer_id, letter_mapping):
             if accused_id == intrigant_target_id:
                 achieved_goals.append(f"🎯 <strong>Intrigant-Ziel erreicht:</strong> Du hast erfolgreich {target_display} den Mord angehängt!")
             else:
-                failed_goals.append(f"🎯 <strong>Intrigant-Ziel verfehlt:</strong> {target_display} wurde nicht hingerichtet.")
+                failed_goals.append(f"🎯 <strong>Intrigant-Ziel verfehlt, du hast versagt:</strong> {target_display} wurde nicht hingerichtet.")
 
     # === VERZWEIFELTE PERSON ===
     if is_desperate:
         if is_accused:
             achieved_goals.append("😔 <strong>Verzweifeltes Ziel erreicht:</strong> Du hast dein Ende gefunden. Möge deine Seele nun Frieden finden.")
         else:
-            failed_goals.append("😔 <strong>Verzweifeltes Ziel verfehlt:</strong> Du lebst weiter, doch der innere Schmerz bleibt.")
+            failed_goals.append("😔 <strong>Du hast schon wieder versagt:</strong> Du lebst weiter, doch der innere Schmerz bleibt.")
 
     # === VERLIEBTES PAAR ===
     if is_lover:
@@ -758,7 +763,7 @@ def get_personal_outcome(character_id, accused_id, murderer_id, letter_mapping):
 
     # === NORMALE UNSCHULDIGE (ohne spezielle Rolle) ===
     if not is_murderer and not is_intrigant and not is_desperate and not is_lover:
-        murderer_caught = (accused_id == murderer_id)
+        murderer_caught = (accused_id == murder_id)
 
         if murderer_caught:
             achieved_goals.append("⚖️ <strong>Unschuldigen-Ziel erreicht:</strong> Der wahre Mörder wurde gefasst und die Gerechtigkeit siegt!")
@@ -901,6 +906,30 @@ def admin():
             else:
                 error = f"Ungültiger Phasenwechsel! Von Phase {current_phase} kann nur zur nächsten Phase gewechselt werden."
 
+        elif action == 'reveal_memories':
+            # Prüfe ob bereits aktiviert
+            if game_state.get("memories_revealed"):
+                error = "Erinnerungen wurden bereits aktiviert."
+            elif game_state.get("current_phase") != 4:
+                error = "Erinnerungen können nur in Phase 4 aktiviert werden."
+            else:
+                # Generiere Erinnerungen
+                murder_id = game_state.get("murder_id")
+                active_chars = game_state.get("active_characters", [])
+                seed_tuple = game_state.get("seed", (None, None, None, 1))
+
+                special_role_ids = {
+                    "intrigant_id": game_state.get("intrigant_id"),
+                    "desperate_id": game_state.get("desperate_id"),
+                    "lovers": game_state.get("lovers", [])
+                }
+
+                memories = generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids)
+
+                game_state["memories_revealed"] = True
+                game_state["memories"] = memories
+                success = f"Zusätzliche Erinnerungen wurden für {len(memories)} Spieler aktiviert."
+
         if error:
             session['admin_error'] = error
         if success:
@@ -920,7 +949,7 @@ def admin():
             is_correct = game_state.get("final_verdict_correct", False)
             letter_mapping = game_state.get("letter_mapping", {})
             phase5_outcome_text = build_phase5_outcome_text(
-                accused_char, letter_mapping, is_correct, game_state.get("victim")
+                accused_char, letter_mapping, is_correct, game_state.get("victim"), game_state
             )
 
     return render_template('admin.html',
@@ -977,6 +1006,7 @@ def player_view(slug):
     # Mörder-Text mit Platzhaltern füllen
     murder_text = None
     innocent_text = None
+    awakening_text = None
 
     if is_murder:
         # Motiv-Text generieren
@@ -993,7 +1023,19 @@ def player_view(slug):
         )
     else:
         # Unschuldigen-Text mit Traumsequenz
-        dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
+        base_dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
+        # Liebespaar: Traum startet mit Gedanken an den Partner
+        if character["id"] in game_state.get("lovers", []):
+            lovers = game_state.get("lovers", [])
+            other_lover_id = [lid for lid in lovers if lid != character["id"]][0]
+            other_lover = get_character_by_id(other_lover_id)
+            if other_lover:
+                dream_intro = (
+                    f"Obwohl der Abend turbulent begann, kreisen deine Gedanken um {other_lover['name']}. "
+                    "Das Gefühl ist überraschend stark – fast so, als hättest du dich Hals über Kopf verliebt. "
+                    f"Du fragst dich, ob {other_lover['name']} das genauso spürt. Doch plötzlich ändert sich die Szenerie... "
+                )
+                base_dream_text = dream_intro + base_dream_text
 
         # Spezielle Rollen-Zusätze
         special_role_text = ""
@@ -1018,37 +1060,19 @@ def player_view(slug):
                 lover_name = other_lover["name"]
                 special_role_text += LOVER_DREAM_TEMPLATE.format(lover_name=lover_name)
 
-        innocent_text = INNOCENT_TEXT_TEMPLATE.format(
-            abendverlauf=abendverlauf,
-            dream_text=dream_text + special_role_text
-        )
+        combined_dream = base_dream_text + special_role_text
 
-    # Aufwach-Text für Phase 4 erstellen (falls Aufwachender)
-    awakening_text = None
-    if is_awakener and not is_murder:
-        dream_text = DREAM_TEXTS.get(character["id"], "Du hast einen seltsamen, wirren Traum.")
+        if is_awakener:
+            # Awakener: Verwende den Aufwach-Text als Haupttext, keine Doppelung
+            innocent_text = AWAKENING_TEXT_TEMPLATE.format(dream_text=combined_dream)
+            awakening_text = None
+        else:
+            innocent_text = INNOCENT_TEXT_TEMPLATE.format(
+                abendverlauf=abendverlauf,
+                dream_text=combined_dream
+            )
 
-        # Spezielle Rollen-Zusätze auch für Awakeners
-        special_role_text = ""
-
-        if character["id"] == game_state.get("intrigant_id"):
-            target_char = get_character_by_id(game_state.get("intrigant_target_id"))
-            if target_char:
-                target_name = target_char["name"]
-                special_role_text += INTRIGANT_DREAM_TEMPLATE.format(target_name=target_name)
-
-        if character["id"] == game_state.get("desperate_id"):
-            special_role_text += DESPERATE_DREAM_SUFFIX
-
-        if character["id"] in game_state.get("lovers", []):
-            lovers = game_state.get("lovers", [])
-            other_lover_id = [lid for lid in lovers if lid != character["id"]][0]
-            other_lover = get_character_by_id(other_lover_id)
-            if other_lover:
-                lover_name = other_lover["name"]
-                special_role_text += LOVER_DREAM_TEMPLATE.format(lover_name=lover_name)
-
-        awakening_text = AWAKENING_TEXT_TEMPLATE.format(dream_text=dream_text + special_role_text)
+    # Aufwach-Text wird nur einmal gezeigt (im Haupttext), daher hier kein separater Block mehr
 
     # Aktuelle Phase
     current_phase = game_state.get("current_phase", 0)
@@ -1078,7 +1102,7 @@ def player_view(slug):
         accused_char = get_character_by_id(game_state["final_accused_id"])
         is_correct = game_state.get("final_verdict_correct", False)
         phase5_outcome_text = build_phase5_outcome_text(
-            accused_char, letter_mapping, is_correct, game_state["victim"]
+            accused_char, letter_mapping, is_correct, game_state["victim"], game_state
         )
 
         # Generiere persönliche Erfolgsmeldung für diesen Spieler
@@ -1088,6 +1112,21 @@ def player_view(slug):
             game_state["murder_id"],
             letter_mapping
         )
+
+    # Phase 4: Zusätzliche Erinnerungen
+    additional_memory_text = None
+    if current_phase >= 4 and game_state.get("memories_revealed"):
+        memories = game_state.get("memories", {})
+        char_id = character["id"]
+
+        if char_id in memories:
+            memory_data = memories[char_id]
+            additional_memory_text = build_memory_text(
+                clue_id=memory_data["clue_id"],
+                subject_id=memory_data["subject_id"],
+                letter_mapping=letter_mapping,
+                clue_pool=memory_data.get("clue_pool", "murder")
+            )
 
     return render_template('player.html',
                          character=character,
@@ -1111,7 +1150,8 @@ def player_view(slug):
                          phase5_intro_speech=phase5_intro_speech,
                          phase5_outcome_text=phase5_outcome_text,
                          personal_outcome_success=personal_outcome_success,
-                         personal_outcome_message=personal_outcome_message)
+                         personal_outcome_message=personal_outcome_message,
+                         additional_memory=additional_memory_text)
 
 @app.route('/victim-reveal')
 def victim_reveal():

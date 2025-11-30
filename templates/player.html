@@ -17,55 +17,75 @@ endblock %} {% block content %}
   </h3>
 </div>
 
-<!-- Phase 1-2: Nur Rolle anzeigen -->
+<!-- ========== PHASE 1-3: DEINE ROLLE ========== -->
 {% if current_phase >= 1 %}
-<!-- Möder oder Unschuldig -->
-{% if is_murder_ and murder_text %} {{ murder_text | safe }} {% elif not
-is_murder_ %} {{ innocent_text | safe }} {% endif %} {% endif %}
+<div style="background: #2c3e50; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 5px solid #3498db;">
+  <h2 style="color: #ecf0f1; margin-top: 0;">📋 Phase 1-3: Deine Rolle</h2>
 
-<!-- Phase 3: Nachtverhalten anzeigen (nur für Unschuldige, da Mörder es bereits im Mörder-Text hat) -->
-{% if current_phase >= 3 and not is_murder_ %}
-<div class="phase3-info">
-  <h3>🌙 Dein Verhalten in der Nacht (Phase 3)</h3>
-  <p><strong>Was du getan hast:</strong></p>
-  <p>{{ phase3.nacht }}</p>
+  <!-- Mörder oder Unschuldig -->
+  {% if is_murder and murder_text %}
+    {{ murder_text | safe }}
+  {% elif not is_murder %}
+    {{ innocent_text | safe }}
+  {% endif %}
 
-  <p style="margin-top: 20px"><strong>Deine Alibi-Information:</strong></p>
-  <p>{{ phase3.alibi }}</p>
+  <!-- Phase 3: Nachtverhalten (nur für Unschuldige, da Mörder es bereits im Mörder-Text hat) -->
+  {% if current_phase >= 3 and not is_murder %}
+  <div class="phase3-info" style="margin-top: 30px; padding: 20px; background: #34495e; border-radius: 5px;">
+    <h3 style="color: #ecf0f1;">🌙 Dein Verhalten in der Nacht</h3>
+    <p style="color: #ecf0f1;"><strong>Was du getan hast:</strong></p>
+    <p style="color: #ecf0f1;">{{ phase3.nacht }}</p>
+
+    <p style="margin-top: 20px; color: #ecf0f1;"><strong>Deine Alibi-Information:</strong></p>
+    <p style="color: #ecf0f1;">{{ phase3.alibi }}</p>
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 
-<!-- Phase 4: Opfer-Informationen und Aufwach-Text -->
+<!-- ========== PHASE 4: ERMITTLUNGEN ========== -->
 {% if current_phase >= 4 %}
-<!-- Opfer-Informationen -->
-<div class="victim-info">
-  <h3>🔪 Das Opfer</h3>
-  <p><strong>Name:</strong> {{ victim.name }}</p>
-  <p><strong>Beruf:</strong> {{ victim.role }}</p>
-  <p><strong>Fundort:</strong> {{ victim.location }}</p>
-  <p style="margin-top: 15px; font-style: italic">
-    Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role
-    }}, in {{ victim.location }} gefunden. Ein schrecklicher Anblick...
-  </p>
+<div style="background: #8b4513; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 5px solid #d2691e;">
+  <h2 style="color: #fff; margin-top: 0;">🔍 Phase 4: Ermittlungen</h2>
+
+  <!-- Opfer-Informationen -->
+  <div class="victim-info" style="background: #a0522d; padding: 15px; border-radius: 5px; margin-top: 15px;">
+    <h3 style="color: #fff;">🔪 Das Opfer wurde gefunden</h3>
+    <p style="color: #fff;"><strong>Name:</strong> {{ victim.name }}</p>
+    <p style="color: #fff;"><strong>Beruf:</strong> {{ victim.role }}</p>
+    <p style="color: #fff;"><strong>Fundort:</strong> {{ victim.location }}</p>
+    <p style="margin-top: 15px; font-style: italic; color: #fff;">
+      Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role
+      }}, gefunden. Ein schrecklicher Anblick...
+    </p>
+  </div>
+
+  <!-- Aufwach-Text (nur für die 2-3 Ausgewählten) -->
+  {% if awakening_text and not additional_memory and not is_desperate %}
+  <div style="margin-top: 20px;">
+    {{ awakening_text | safe }}
+  </div>
+  {% endif %}
+
+  <!-- Zusätzliche Erinnerungen -->
+  {% if additional_memory %}
+  <div class="memory-section" style="margin-top: 20px; padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+    <div class="additional-memory">
+      <h4 style="margin-top:0; color:#856404;">📝 Zusätzliche Erinnerung</h4>
+      <p style="margin: 8px 0 0 0; color:#111;"><strong>Du erinnerst dich jetzt:</strong></p>
+        <p style="margin: 8px 0 0 0; color: #111;">{{ additional_memory }}</p>
+    </div>
+  </div>
+  {% endif %}
 </div>
+{% endif %}
 
-<!-- Phase 4: Aufwach-Text (nur für die 2-3 Ausgewählten) -->
-{% if awakening_text %} {{ awakening_text | safe }} {% endif %} {% endif %}
-
-<!-- Phase 5: Abstimmung -->
+<!-- ========== PHASE 5: ABSTIMMUNG ========== -->
 {% if current_phase >= 5 %}
-<div
-  style="
-    background: #e74c3c;
-    padding: 20px;
-    border-radius: 8px;
-    margin: 30px 0;
-    border: 3px solid #c0392b;
-  "
->
+<div style="background: #e74c3c; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 5px solid #c0392b;">
   {% if runoff_active %}
   <h2 style="color: #fff; margin-top: 0">
-    ⚖️ Stichwahl - Runde {{ runoff_round }}
+    ⚖️ Phase 5: Stichwahl - Runde {{ runoff_round }}
   </h2>
   <div
     style="
@@ -220,11 +240,15 @@ is_murder_ %} {{ innocent_text | safe }} {% endif %} {% endif %}
     </button>
   </form>
 
-  <p
-    style="color: #fff; margin-top: 15px; font-size: 0.9em; font-style: italic"
-  >
-    ⚠️ Du kannst nicht für dich selbst stimmen. Wähle weise!
-  </p>
+  {% if is_desperate %}
+    <p style="color: #fff; margin-top: 15px; font-size: 0.9em; font-style: italic">
+      ⚠️ Als Verzweifelte Person solltest du für dich selbst stimmen.
+    </p>
+  {% else %}
+    <p style="color: #fff; margin-top: 15px; font-size: 0.9em; font-style: italic">
+      ⚠️ Du kannst nicht für dich selbst stimmen. Wähle weise!
+    </p>
+  {% endif %}
   {% endif %}
 </div>
 {% endif %}
@@ -241,5 +265,37 @@ is_murder_ %} {{ innocent_text | safe }} {% endif %} {% endif %}
     Jeder hat seine eigene Rolle und Informationen.
   </p>
 </div>
+
+<style>
+.additional-memory {
+  font-family: Georgia, serif;
+  line-height: 1.6;
+}
+
+.additional-memory h4 {
+  color: #856404;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+.additional-memory p {
+  margin: 10px 0;
+}
+
+.memory-section {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
 
 {% endblock %}

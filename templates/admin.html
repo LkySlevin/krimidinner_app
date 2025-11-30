@@ -49,6 +49,7 @@ block content %}
           type="checkbox"
           name="characters"
           value="{{ char.id }}"
+          {% if char.id <= 8 %}checked{% endif %}
           style="margin-right: 10px; width: 20px; height: 20px; cursor: pointer"
         />
         <span style="font-size: 1.1em">{{ char.name }}</span>
@@ -209,6 +210,24 @@ block content %}
     game_state.victim.role }})
   </p>
   {% endif %}
+
+  <!-- Zusätzliche Erinnerungen Button -->
+  <div style="margin-top: 20px; padding: 15px; background: #3498db; border-radius: 5px;">
+    <h3 style="margin-top: 0; color: #fff;">🧠 Zusätzliche Erinnerungen</h3>
+
+    {% if not game_state.memories_revealed %}
+      <p style="color: #fff; margin: 10px 0;">Spieler können sich an verdächtige Beobachtungen vom Abendessen erinnern.</p>
+      <form method="POST" style="display: inline;">
+        <input type="hidden" name="action" value="reveal_memories">
+        <button type="submit" class="button" style="background: #2980b9; padding: 10px 20px; border: none; border-radius: 5px; color: white; font-size: 1em; cursor: pointer;">
+          📝 Zusätzliche Erinnerungen aktivieren
+        </button>
+      </form>
+    {% else %}
+      <p style="color: #fff; margin: 0;">✅ Zusätzliche Erinnerungen wurden aktiviert</p>
+      <p style="color: #fff; margin: 10px 0 0 0;"><strong>{{ game_state.memories|length }} Spieler</strong> haben sich an Hinweise erinnert.</p>
+    {% endif %}
+  </div>
 </div>
 {% elif game_state.current_phase == 5 %}
 <div
@@ -336,17 +355,7 @@ block content %}
   </div>
   {% endif %}
 
-  <!-- Auto-Refresh Script (nur wenn Abstimmung läuft) -->
-  {% if not game_state.voting_complete %}
-  <script>
-    // Auto-Refresh alle 10 Sekunden
-    setTimeout(function () {
-      location.href = location.href;
-    }, 10000);
-  </script>
-  {% endif %}
-
-  <!-- Manueller Refresh Button -->
+  <!-- Manueller Refresh Button (kein Auto-Reload) -->
   <div style="text-align: center; margin: 15px 0">
     <button
       onclick="location.href = location.href"
@@ -476,8 +485,6 @@ block content %}
   <h3>Spiel läuft mit {{ game_state.num_players }} Spielern!</h3>
 
   <p><strong>Aktuelle Spielphase:</strong> {{ game_state.current_phase }}</p>
-
-  <p><strong>Aller Personen scannen ihre QR Codes </strong></p>
 
   <p style="margin-top: 15px">
     <strong>Aktive Spieler:</strong>
