@@ -143,7 +143,7 @@ RED_HERRING_MATRIX = {
             },
             {
                 "id": 202,
-                "detail": "{subject_name} stürmte hinter Viktor her und rief ihm nach, dass er „endlich zahlen soll, was er versprochen hat“."
+                "detail": "{subject_name} stürmte hinter Viktor her und rief ihm nach, dass er es noch bereuhen werde, die Idee abgelehnt zu haben."
             },
         ]
     },
@@ -179,13 +179,13 @@ RED_HERRING_MATRIX = {
             },
             {
                 "id": 502,
-                "detail": "Viktor kam aus dem Büro, und {subject_name} zischte ihm hinterher, er solle ihre Zeit nicht verschwenden – das klang nach Ärger."
+                "detail": "Viktor kam aus dem Büro, und {subject_name} zischte ihm hinterher, dass er schon noch für alles bezahlen werde."
             },
         ],
         "Jonas Reber": [
             {
                 "id": 503,
-                "detail": "Am Buffet nörgelte {subject_firstname} lautstark an Jonas’ Menü herum und beschuldigte ihn, ihre Rezepte kopiert zu haben."
+                "detail": "Am Buffet nörgelte {subject_firstname} lautstark an Jonas’ Menü herum und beschuldigte ihn, ihre Insta-Rezepte kopiert zu haben."
             },
             {
                 "id": 504,
@@ -197,7 +197,7 @@ RED_HERRING_MATRIX = {
         "Jonas Reber": [
             {
                 "id": 601,
-                "detail": "Ich hörte, wie {subject_firstname} Jonas scharf fragte, ob er sie wieder für den Tod ihres Vaters verantwortlich machen wolle."
+                "detail": "Ich hörte, wie {subject_firstname} Jonas scharf fragte, ob er sie wieder für den Tod von jemandem verantwortlich machen wolle."
             },
             {
                 "id": 602,
@@ -223,7 +223,7 @@ RED_HERRING_MATRIX = {
             },
             {
                 "id": 704,
-                "detail": "Beim Dessert stritten {subject_firstname} und Jonas laut über Bio-Zutaten. Jonas winkte ab, aber {subject_firstname} wurde richtig wütend."
+                "detail": "Beim Dessert stritten {subject_firstname} und Jonas laut über Bio-Zutaten. Jonas meinte, dass Bio für ihn Abfall wäre und {subject_firstname} wurde richtig wütend."
             },
         ]
     },
@@ -231,21 +231,21 @@ RED_HERRING_MATRIX = {
         "Viktor Bergmann": [
             {
                 "id": 801,
-                "detail": "{subject_firstname} zog Viktor beiseite und prahlte erst – dann hörte ich, wie er Viktor vorwarf, seinen Golfplatz lächerlich gemacht zu haben."
+                "detail": "{subject_firstname} zog Viktor beiseite und prahlte erst – dann hörte ich, wie er Viktor vorwarf, seinen Golfleistungen lächerlich gemacht zu haben."
             },
             {
                 "id": 802,
-                "detail": "Viktor lachte über einen Spruch, und {subject_name} wurde rot vor Wut. Er murmelte, Viktor solle das noch bereuen."
+                "detail": "Ich sah wie Viktor eine 'kleine Violine' spielte und lachte, wobei {subject_name} rot vor Wut wurde. Er murmelte, Viktor solle das noch bereuen."
             },
         ],
         "Dimitri Volkov": [
             {
                 "id": 803,
-                "detail": "Im Foyer drängte {subject_firstname} Dimitri, endlich das Geld zu überweisen. Dimitri winkte ab, was {subject_firstname} noch wütender machte."
+                "detail": "Im Foyer drängte {subject_firstname} Dimitri als Investor einzusteigen. Dimitri winkte ab, was {subject_firstname} noch wütender machte."
             },
             {
                 "id": 804,
-                "detail": "{subject_name} folgte Dimitri bis zum Aufzug und sagte, sie würden „die Schulden heute Nacht klären“. Dimitri sah genervt aus."
+                "detail": "{subject_name} folgte Dimitri bis zum Aufzug und sagte, dass es seine letzte Chance sei. Dimitri sah genervt aus als sich die Fahrstuhltür schloss."
             },
         ]
     },
@@ -279,13 +279,13 @@ RED_HERRING_MATRIX = {
             },
             {
                 "id": 1002,
-                "detail": "Dimitri verließ hastig den Wintergarten, nachdem {subject_name} ihm sagte, „der KGB hört alles“ – das klang nicht nach Spaß."
+                "detail": "Dimitri verließ hastig den Wintergarten, nachdem {subject_name} ihm sagte, „der KGB hört und sieht alles“ – das klang nicht nach Spaß."
             },
         ],
         "Viktor Bergmann": [
             {
                 "id": 1003,
-                "detail": "Später hörte ich, wie {subject_firstname} Viktor drohte, seine Machenschaften öffentlich zu machen, wenn er sie weiter unterschätzt."
+                "detail": "Später hörte ich, wie {subject_firstname} Viktor drohte, seine finanziellen Machenschaften öffentlich zu machen, wenn er sie weiter unterschätzt."
             },
             {
                 "id": 1004,
