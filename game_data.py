@@ -27,9 +27,9 @@ NPCS = {
 }
 
 NPC_PLACEHOLDER_MAP = {
-    "H": {"name": "Der Koch", "tag": "NPC"},
-    "I": {"name": "Die Hausdame", "tag": "NPC"},
-    "J": {"name": "Viktor Bergmann", "tag": "Hotelier"}
+    "H": {"name": "Jonas, der Koch,", "tag": "Koch"},
+    "I": {"name": "Helga, die Hausdame,", "tag": "Hausdame"},
+    "J": {"name": "Viktor Bergmann, der Hotelier", "tag": "Hotelier"}
 }
 
 # Motiv-Matrix: Wer hat gegen wen ein Motiv
