@@ -6,41 +6,127 @@
 <h1>📱 Spieler-Links & QR-Codes</h1>
 
 <div class="info-box">
-    <p><strong>ℹ️ Anleitung:</strong> Teile jedem Spieler seinen individuellen Link mit.
-    Die Spieler können den Link öffnen, um ihre Rolle und Phase-3-Informationen zu sehen.</p>
-    <p style="margin-top: 10px;"><strong>Tipp:</strong> Du kannst QR-Codes mit einem Online-Generator
-    erstellen (z.B. <a href="https://www.qr-code-generator.com" target="_blank" style="color: #87CEEB;">qr-code-generator.com</a>)
-    und die unten stehenden Links verwenden.</p>
+    <p><strong>ℹ️ Anleitung:</strong> Klicke auf einen Charakternamen, um den QR-Code und Link anzuzeigen.
+    Die Spieler können den QR-Code scannen oder den Link öffnen, um ihre Rolle und Phase-3-Informationen zu sehen.</p>
 </div>
 
 <h2>Spieler-Links</h2>
 
+<style>
+    .collapsible {
+        background-color: #2a2a2a;
+        color: #ffa07a;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        transition: background-color 0.3s;
+    }
+
+    .collapsible:hover {
+        background-color: #3a3a3a;
+    }
+
+    .collapsible.active {
+        background-color: #3a3a3a;
+    }
+
+    .collapsible::after {
+        content: '\002B'; /* Plus symbol */
+        color: #ffa07a;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+    }
+
+    .collapsible.active::after {
+        content: "\2212"; /* Minus symbol */
+    }
+
+    .content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background-color: #1a1a1a;
+        border-radius: 0 0 5px 5px;
+        margin-bottom: 15px;
+    }
+
+    .content-inner {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .qr-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        display: inline-block;
+        margin: 20px 0;
+    }
+
+    .player-url {
+        word-break: break-all;
+        background-color: #2a2a2a;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 15px;
+    }
+
+    .player-url a {
+        color: #87CEEB;
+        text-decoration: none;
+    }
+
+    .player-url a:hover {
+        text-decoration: underline;
+    }
+</style>
+
 {% for item in player_links %}
-    <div class="player-link">
-        <h3 style="color: #ffa07a; margin-bottom: 10px;">[{{ item.assigned_letter }}] {{ item.character.name }}</h3>
-        <p><strong>Link:</strong></p>
-        <a href="{{ item.url }}" target="_blank">{{ item.url }}</a>
-        <br><br>
-        <p style="font-size: 0.9em; color: #888;">
-            Kopiere diesen Link oder erstelle einen QR-Code für {{ item.character.name }}
-        </p>
+    <button class="collapsible">[{{ item.assigned_letter }}] {{ item.character.name }}</button>
+    <div class="content">
+        <div class="content-inner">
+            {% if item.qr_url %}
+                <div class="qr-container">
+                    <img src="{{ item.qr_url }}" alt="QR-Code für {{ item.character.name }}" style="width: 256px; height: auto;">
+                </div>
+            {% else %}
+                <p style="margin: 10px 0;">Kein QR-Code gefunden. Bitte im Admin-Panel neu generieren.</p>
+            {% endif %}
+            <div class="player-url">
+                <strong>Link:</strong><br>
+                <a href="{{ item.url }}" target="_blank">{{ item.url }}</a>
+            </div>
+        </div>
     </div>
 {% endfor %}
+
+<script>
+    // Collapsible functionality
+    var coll = document.getElementsByClassName("collapsible");
+    for (var i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
 
 <div style="margin-top: 30px; text-align: center;">
     <a href="{{ url_for('admin') }}" class="btn">⚙️ Zurück zum Admin-Panel</a>
     <a href="{{ url_for('index') }}" class="btn btn-secondary">🏠 Zur Startseite</a>
-</div>
-
-<div class="info-box" style="margin-top: 30px;">
-    <strong>💡 Tipp für QR-Codes:</strong>
-    <p style="margin-top: 10px;">
-        1. Kopiere die URL des jeweiligen Spielers<br>
-        2. Gehe zu einem QR-Code-Generator (z.B. qr-code-generator.com)<br>
-        3. Füge die URL ein und generiere den QR-Code<br>
-        4. Drucke die QR-Codes aus oder zeige sie auf deinem Bildschirm<br>
-        5. Die Spieler scannen ihren QR-Code mit dem Smartphone
-    </p>
 </div>
 
 {% endblock %}

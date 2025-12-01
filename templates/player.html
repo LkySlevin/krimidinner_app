@@ -33,11 +33,11 @@ endblock %} {% block content %}
   {% if current_phase >= 3 and not is_murder %}
   <div class="phase3-info" style="margin-top: 30px; padding: 20px; background: #34495e; border-radius: 5px;">
     <h3 style="color: #ecf0f1;">🌙 Dein Verhalten in der Nacht</h3>
-    <p style="color: #ecf0f1;"><strong>Was du getan hast:</strong></p>
-    <p style="color: #ecf0f1;">{{ phase3.nacht }}</p>
-
     <p style="margin-top: 20px; color: #ecf0f1;"><strong>Deine Alibi-Information:</strong></p>
     <p style="color: #ecf0f1;">{{ phase3.alibi }}</p>
+
+    <p style="margin-top: 20px; color: #ecf0f1;"><strong>Was du getan hast:</strong></p>
+    <p style="color: #ecf0f1;">{{ phase3.nacht }}</p>
   </div>
   {% endif %}
 </div>
@@ -55,7 +55,7 @@ endblock %} {% block content %}
     <p style="color: #fff;"><strong>Beruf:</strong> {{ victim.role }}</p>
     <p style="color: #fff;"><strong>Fundort:</strong> {{ victim.location }}</p>
     <p style="margin-top: 15px; font-style: italic; color: #fff;">
-      Am nächsten Morgen wird die Leiche von {{ victim.name }}, dem {{ victim.role
+      Noch in der Nacht wird die Leiche von {{ victim.name }}, dem {{ victim.role
       }}, gefunden. Ein schrecklicher Anblick...
     </p>
   </div>

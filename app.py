@@ -504,10 +504,10 @@ def build_phase5_intro_speech(victim):
         <p>„Ich weiß nicht, was heute Nacht passiert ist… aber ich weiß eines: Hier drin sitzt jemand, der uns alle in Gefahr gebracht hat. Und ich werde nicht zulassen, dass das nochmal passiert."</p>
         <p>Er ballt die Hände, zwingt sich aber, die Stimme gleichmäßig zu halten.</p>
         <p>„Die Polizei rufen? Nein. Dafür ist es zu spät und außerdem kommt bei dem Wetter niemand hierher. Dafür ist zu viel auf dem Spiel. Dieser Ort darf nicht wieder in die Schlagzeilen. Nicht nach dem, was hier früher schon geschehen ist."</p>
-        <p>Ein kurzes Schweigen. Dann:</p>
+        <p>Ein kurzes Schweigen.</p>
         <p>„Mir ist egal, wer es war. Mir ist egal, warum. Aber es endet heute Nacht. Hier. In diesem Raum."</p>
         <p>Er zeigt auf die Gruppe.</p>
-        <p>„Ihr werdet jetzt abstimmen. Jede und jeder von euch weiß genug, um eine Entscheidung zu treffen. Schaut euch an, hört einander zu – und entscheidet. Wer von euch ist fähig gewesen, das zu tun?"</p>
+        <p>„Ihr werdet jetzt abstimmen. Jede und jeder von euch weiß genug, um eine Entscheidung zu treffen. Wer von euch ist fähig gewesen, das zu tun?"</p>
         <p>Er tritt einen Schritt zurück, seine Stimme wird dunkler.</p>
         <p>„Ich verspreche euch: Ich kümmere mich danach persönlich um die Person, die ihr bestimmt. Auge um Auge. Zahn um Zahn."</p>
         <p>Noch ein tiefes Einatmen.</p>
@@ -987,8 +987,8 @@ def player_view(slug):
     # Zugewiesenen Buchstaben für diesen Charakter holen
     assigned_letter = letter_mapping.get(character["id"], character["letter"])
 
-    # Phase-3-Texte holen und Platzhalter ersetzen
-    phase3_raw = PHASE3_TEXTS.get(character["id"], {
+    # Phase-3-Texte holen und Platzhalter ersetzen (nach zugewiesenem Buchstaben)
+    phase3_raw = PHASE3_TEXTS.get(assigned_letter, {
         "nacht": "Keine Informationen verfügbar.",
         "alibi": "Keine Alibi-Information verfügbar."
     })
@@ -1000,8 +1000,8 @@ def player_view(slug):
         "alibi": replace_letter_placeholders(phase3_raw["alibi"], letter_mapping, active_chars)
     }
 
-    # Abendverlauf für alle erstellen
-    abendverlauf = f"<p><strong>Dein Abend:</strong></p><p>{phase3['nacht']}</p><p>{phase3['alibi']}</p>"
+    # Abendverlauf für alle erstellen (erst Alibi, dann Nacht)
+    abendverlauf = f"<p><strong>Dein Abend:</strong></p><p>{phase3['alibi']}</p><p>{phase3['nacht']}</p>"
 
     # Mörder-Text mit Platzhaltern füllen
     murder_text = None
@@ -1349,6 +1349,7 @@ def qr_codes():
     # Links nur für aktive Spieler erstellen mit lokaler Netzwerk-IP
     local_ip = get_local_ip()
     base_url = f"http://{local_ip}:9000/"
+    qr_folder = os.path.join(os.path.dirname(__file__), 'qr_codes')
 
     active_chars = game_state.get("active_characters", CHARACTERS)
     letter_mapping = game_state.get("letter_mapping", {})
@@ -1356,13 +1357,26 @@ def qr_codes():
     for char in active_chars:
         assigned_letter = letter_mapping.get(char["id"], char["letter"])
         slug = get_player_slug(char)
+        safe_name = char['name'].replace(' ', '_').replace('"', '').replace('?', '').replace('"', '')
+        filename = f"{assigned_letter}_{safe_name}.png"
+        qr_path = os.path.join(qr_folder, filename)
         player_links.append({
             "character": char,
             "url": base_url + "player/" + slug,
-            "assigned_letter": assigned_letter
+            "assigned_letter": assigned_letter,
+            "qr_url": url_for('qr_code_file', filename=filename) if os.path.isfile(qr_path) else None
         })
 
     return render_template('qr_codes.html', player_links=player_links)
+
+@app.route('/qr-codes/files/<path:filename>')
+def qr_code_file(filename):
+    """Stellt generierte QR-Code-Bilder bereit."""
+    qr_folder = os.path.join(os.path.dirname(__file__), 'qr_codes')
+    file_path = os.path.join(qr_folder, filename)
+    if not os.path.isfile(file_path):
+        abort(404)
+    return send_from_directory(qr_folder, filename)
 
 # ============================================================================
 # MAIN
