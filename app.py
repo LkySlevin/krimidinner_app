@@ -274,17 +274,20 @@ def select_special_roles(active_characters, murder_id):
     Wählt ECHT-ZUFÄLLIG die speziellen Rollen (nicht deterministisch):
     - Intrigant (will jemandem den Mord anhängen)
     - Verzweifelte Person (will als Mörder identifiziert werden)
-    - Verliebtes Paar (wollen gemeinsam überleben)
+    - Verliebtes Paar (wollen gemeinsam überleben, hier darf auch der Mörder Teil des Paars sein)
 
     Alle außer dem Mörder können diese Rollen bekommen.
     Der Intrigant darf aber jede beliebige Zielperson wählen – inklusive des Mörders.
     Die Auswahl ist nicht Seed-basiert, sondern bei jedem Spielstart neu zufällig.
     """
-    # Alle außer dem Mörder
+    if len(active_characters) < 5:
+        return None, None, None, []
+
+    # Alle außer dem Mörder für Intrigant/Verzweifelte
     innocents = [char for char in active_characters if char["id"] != murder_id]
 
     # Sicherstellen, dass genug Spieler vorhanden sind (mindestens 5 für alle Rollen)
-    if len(innocents) < 5:
+    if len(innocents) < 4:  # Intrigant, Ziel, Verzweifelte + mind. 1 weiterer für Lover-Pool
         return None, None, None, []
 
     # Mische die Unschuldigen (echt zufällig, kein Seed)
@@ -303,8 +306,15 @@ def select_special_roles(active_characters, murder_id):
     desperate = available_innocents.pop(0)
 
     # 3. Verliebtes Paar auswählen (2 Personen)
-    lover1 = available_innocents.pop(0)
-    lover2 = available_innocents.pop(0)
+    lover_pool = [
+        char for char in active_characters
+        if char["id"] not in {intrigant["id"], desperate["id"]}
+    ]
+    random.shuffle(lover_pool)
+    if len(lover_pool) < 2:
+        return intrigant["id"], intrigant_target["id"], desperate["id"], []
+    lover1 = lover_pool.pop(0)
+    lover2 = lover_pool.pop(0)
 
     return intrigant["id"], intrigant_target["id"], desperate["id"], [lover1["id"], lover2["id"]]
 
