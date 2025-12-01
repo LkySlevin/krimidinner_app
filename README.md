@@ -168,4 +168,10 @@ krimidinner_app/
 - ✅ QR-Code-freundliche Links
 - ✅ Responsive Design für Mobilgeräte
 
+## Weiterentwicklung
+
+- Nicht-übernatürliches Szenario: Der Flintenschrank klemmt, der Leichenfund verzögert sich um ca. 5 Minuten. Die Gruppe trifft sich entsprechend später; das Zimmer des Mörders liegt direkt neben der Feuerleiter. Der Weg zum Opfer führt normal über die Terrasse (kein Sprung vom Balkon). Ergänze einen Hinweis, dass jemand die Schuhe gewechselt hat – die Spuren vom Baum weg sind kleiner.
+- Optional: Murder-Clues können auch versehentlich auf andere Spieler zeigen (Red Herrings), was die Aufklärung bewusst erschwert.
+- Idee (noch nicht umgesetzt): Bei vorhandenem Motiv könnte ein Red Herring auf den Mörder zeigen und dafür ein Murder-Clue auf eine andere Person – würde die Verwirrung erhöhen, müsste aber sauber umgesetzt werden.
+
 ## Viel Erfolg beim Krimidinner! 🕵️‍♀️🔪

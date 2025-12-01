@@ -374,13 +374,14 @@ def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids,
     victim_name = victim.get("name") if isinstance(victim, dict) else None
 
     # 1. Vergebe echte Mörder-Hinweise
+    murder_clue_ids = [clue["id"] for clue in MURDER_CLUES]
     used_clues_true = set()
     for witness in true_witnesses:
         # Wähle zufälligen Hinweis (ohne Wiederholung)
-        available_clues = [i for i in range(1, len(MURDER_CLUES) + 1) if i not in used_clues_true]
+        available_clues = [i for i in murder_clue_ids if i not in used_clues_true]
         if not available_clues:
             used_clues_true.clear()  # Reset wenn alle verwendet
-            available_clues = list(range(1, len(MURDER_CLUES) + 1))
+            available_clues = murder_clue_ids[:]
 
         clue_id = rng.choice(available_clues)
         used_clues_true.add(clue_id)
