@@ -81,7 +81,7 @@ MURDER_CLUES = [
     {
         "id": 1,
         "observation": "hat nur Fleisch gegessen",
-        "detail": "Ich habe bemerkt, dass {subject_name} ausschließlich von den goldenen Schüsseln gegessen hat (Fleisch und Fisch). Die Schüsseln mit Gemüse und Suppe hat {subject_name} komplett ignoriert."
+        "detail": "Ich bemerkte, dass {subject_name} beim Hauptgang ausschließlich von den goldenen Schüsseln gegessen hat (Fleisch und Fisch). Die Schüsseln mit Gemüse hat {subject_name} komplett ignoriert."
     },
     {
         "id": 3,
@@ -90,81 +90,207 @@ MURDER_CLUES = [
     },
     {
         "id": 4,
-        "observation": "vermied Silberbesteck",
-        "detail": "Ich sah, dass {subject_name} das Silberbesteck auf dem Tisch vermieden hat und stattdessen mit den Händen oder eigenem Besteck aß."
+        "observation": "eigenes Besteck mitgebracht",
+        "detail": "Ich sah, dass {subject_name} sein eigenes Besteck mitgebracht hatte. Auf meine Frage warum, meinte {subject_name}, ob ich nicht wüsste, wie häufig Keime über dreckiges Hotelbesteck verteilt werden."
     },
     {
         "id": 5,
         "observation": "war ungewöhnlich blass",
-        "detail": "{subject_name} sah sehr blass und krank aus während des Abendessens. Ich fragte, ob es {subject_name} gut geht, aber {subject_name} wich der Frage aus."
+        "detail": "{subject_name} sah sehr blass aus, nachdem er die Suppe gegessen hatte. Ich fragte, ob es {subject_name} gut geht, aber {subject_name} meinte nur er sei gegen etwas in der Suppe allergisch."
     },
     {
         "id": 6,
         "observation": "hatte erweiterte Pupillen",
-        "detail": "Als ich mit {subject_name} sprach, fielen mir die seltsam erweiterten Pupillen auf. Der Blick war irgendwie glasig und leer."
+        "detail": "Als ich mit {subject_name} sprach, fielen mir die seltsam erweiterten Pupillen auf. Der Blick war irgendwie glasig und leer, so als hätte {subject_name} etwas eingenommen. War {subject_name} noch zurechnungsfähig?"
     },
     {
         "id": 7,
         "observation": "reagierte nervös auf Nachthimmel-Erwähnung",
-        "detail": "Als jemand den schönen, sternenklaren Nachthimmel erwähnte, zuckte {subject_name} zusammen und wurde plötzlich sehr still und angespannt."
+        "detail": "Als jemand den schönen, sternenklaren Nachthimmel erwähnte, wurde {subject_name} plötzlich sehr still und angespannt."
     },
     {
         "id": 8,
         "observation": "schwitzte stark",
         "detail": "{subject_name} schwitzte ungewöhnlich stark, obwohl es im Raum eher kühl war. {subject_name} tupfte sich ständig die Stirn ab."
-    }
-]
-
-# Falsche Fährten (Red Herrings) für Erinnerungen
-RED_HERRING_CLUES = [
-    {
-        "id": 1,
-        "observation": "telefonierte lange",
-        "detail": "{subject_name} hat sich nach dem Essen für einen langen Anruf zurückgezogen."
-    },
-    {
-        "id": 2,
-        "observation": "hatte tränende Augen",
-        "detail": "Die Augen von {subject_name} waren gerötet und tränten."
-    },
-    {
-        "id": 3,
-        "observation": "roch nach Rauch",
-        "detail": "Mir ist ein leichter Rauchgeruch an {subject_name} aufgefallen."
-    },
-    {
-        "id": 4,
-        "observation": "zählte ständig Besteck",
-        "detail": "{subject_name} hat während des Dinners mehrfach das Besteck gezählt."
-    },
-    {
-        "id": 5,
-        "observation": "fragte nach WLAN",
-        "detail": "{subject_name} wollte unbedingt das WLAN-Passwort und war dauernd am Handy."
-    },
-    {
-        "id": 6,
-        "observation": "war extrem müde",
-        "detail": "{subject_name} hat ständig gegähnt und wirkte völlig übermüdet."
-    },
-    {
-        "id": 7,
-        "observation": "musste oft aufs Klo",
-        "detail": "{subject_name} war dauernd auf der Toilette."
-    },
-    {
-        "id": 8,
-        "observation": "polierte Besteck",
-        "detail": "Ich sah, wie {subject_name} mehrfach das eigene Besteck polierte."
     },
     {
         "id": 9,
-        "observation": "starrte ins Leere",
-        "detail": "{subject_name} starrte häufiger gedankenverloren in die Leere."
-    },
-    {
-        "id": 10,
-        "observation": "wechselte ständig Plätze",
-        "detail": "{subject_name} hat während des Abends mehrmals den Sitzplatz gewechselt."
+        "observation": "Kein Spaziergang",
+        "detail": "Als jemand eine Nachtwanderung vorschlug, lehnte {subject_name} vehement ab, weil das viel zu kindisch sei. Hat {subject_name} Angst im Dunkeln?"
     }
 ]
+
+# Opferbezogene falsche Fährten (Red Herrings) pro Charakter und Motiv-Opfer
+# Für jedes Motiv-Opfer gibt es zwei mögliche Red-Herring-Beobachtungen.
+RED_HERRING_MATRIX = {
+    1: {  # Vincent -> Dimitri
+        "Dimitri Volkov": [
+            {
+                "id": 101,
+                "detail": "{subject_firstname} hat Dimitri noch spät in der Lobby abgepasst und bestand darauf, dass sie dringend unter vier Augen reden müssen."
+            },
+            {
+                "id": 102,
+                "detail": "Aus der Bar hörte ich, wie {subject_name} Dimitri laut vorwarf, seine Betrügereien aufzudecken – kurz bevor beide auseinander gingen."
+            },
+        ]
+    },
+    2: {  # Alexa -> Viktor
+        "Viktor Bergmann": [
+            {
+                "id": 201,
+                "detail": "Ich sah, wie {subject_firstname} Viktor im Büro abpasste und ihm wütend Akten unter die Nase hielt – das klang nicht nach einem höflichen Gespräch."
+            },
+            {
+                "id": 202,
+                "detail": "{subject_name} stürmte hinter Viktor her und rief ihm nach, dass er „endlich zahlen soll, was er versprochen hat“."
+            },
+        ]
+    },
+    3: {  # Viktoria -> Dimitri
+        "Dimitri Volkov": [
+            {
+                "id": 301,
+                "detail": "Dimitri und {subject_firstname} flüsterten lange auf dem Balkon. Als ich näher kam, hörte ich, wie {subject_firstname} „das Geld“ erwähnte."
+            },
+            {
+                "id": 302,
+                "detail": "{subject_name} nahm Dimitri beiseite und warnte ihn, dass er „damit nicht durchkommt“. Dimitri wirkte sichtlich nervös."
+            },
+        ]
+    },
+    4: {  # Pater Benedetti -> Jonas
+        "Jonas Reber": [
+            {
+                "id": 401,
+                "detail": "In der Küche redete {subject_firstname} mit Jonas auffallend streng und schien ihm eine letzte Warnung zu geben."
+            },
+            {
+                "id": 402,
+                "detail": "Ich sah Jonas und {subject_firstname} hinter der Tür zur Vorratskammer diskutieren; Jonas wirkte kleinlaut und nickte nur."
+            },
+        ]
+    },
+    5: {  # Jazz -> Viktor und Jonas
+        "Viktor Bergmann": [
+            {
+                "id": 501,
+                "detail": "{subject_firstname} stellte Viktor in der Lounge zur Rede, weil er einen Deal nicht eingehalten habe. Die Stimmung war eisig."
+            },
+            {
+                "id": 502,
+                "detail": "Viktor kam aus dem Büro, und {subject_name} zischte ihm hinterher, er solle ihre Zeit nicht verschwenden – das klang nach Ärger."
+            },
+        ],
+        "Jonas Reber": [
+            {
+                "id": 503,
+                "detail": "Am Buffet nörgelte {subject_firstname} lautstark an Jonas’ Menü herum und beschuldigte ihn, ihre Rezepte kopiert zu haben."
+            },
+            {
+                "id": 504,
+                "detail": "{subject_name} schnappte Jonas am Ärmel und verlangte, dass er endlich zugibt, ihre Follower mit Fake-Accounts abzuwerben."
+            },
+        ]
+    },
+    6: {  # Dr. Chen -> Jonas
+        "Jonas Reber": [
+            {
+                "id": 601,
+                "detail": "Ich hörte, wie {subject_firstname} Jonas scharf fragte, ob er sie wieder für den Tod ihres Vaters verantwortlich machen wolle."
+            },
+            {
+                "id": 602,
+                "detail": "{subject_name} stand dicht vor Jonas und erklärte mit eiskalter Stimme, dass seine Anschuldigungen Konsequenzen haben werden."
+            },
+        ]
+    },
+    7: {  # Luna -> Viktor und Jonas
+        "Viktor Bergmann": [
+            {
+                "id": 701,
+                "detail": "Auf der Treppe stellte {subject_firstname} Viktor wütend zur Rede – sie machte ihn für alte Schuld verantwortlich und drohte, „es allen zu erzählen“."
+            },
+            {
+                "id": 702,
+                "detail": "Im Flur hörte ich {subject_name}, wie sie Viktor vorwarf, ihre Familie ruiniert zu haben. Viktor wich keinen Schritt zurück."
+            },
+        ],
+        "Jonas Reber": [
+            {
+                "id": 703,
+                "detail": "{subject_firstname} beschuldigte Jonas, die Umwelt zu ruinieren, und sagte, jemand müsse ihn stoppen, bevor es schlimmer wird."
+            },
+            {
+                "id": 704,
+                "detail": "Beim Dessert stritten {subject_firstname} und Jonas laut über Bio-Zutaten. Jonas winkte ab, aber {subject_firstname} wurde richtig wütend."
+            },
+        ]
+    },
+    8: {  # Max -> Viktor und Dimitri
+        "Viktor Bergmann": [
+            {
+                "id": 801,
+                "detail": "{subject_firstname} zog Viktor beiseite und prahlte erst – dann hörte ich, wie er Viktor vorwarf, seinen Golfplatz lächerlich gemacht zu haben."
+            },
+            {
+                "id": 802,
+                "detail": "Viktor lachte über einen Spruch, und {subject_name} wurde rot vor Wut. Er murmelte, Viktor solle das noch bereuen."
+            },
+        ],
+        "Dimitri Volkov": [
+            {
+                "id": 803,
+                "detail": "Im Foyer drängte {subject_firstname} Dimitri, endlich das Geld zu überweisen. Dimitri winkte ab, was {subject_firstname} noch wütender machte."
+            },
+            {
+                "id": 804,
+                "detail": "{subject_name} folgte Dimitri bis zum Aufzug und sagte, sie würden „die Schulden heute Nacht klären“. Dimitri sah genervt aus."
+            },
+        ]
+    },
+    9: {  # Tom -> Jonas und Dimitri
+        "Jonas Reber": [
+            {
+                "id": 901,
+                "detail": "Draußen vor der Tür stritt {subject_firstname} mit Jonas über Müll im Wald. {subject_firstname} sagte, er werde das nicht mehr dulden."
+            },
+            {
+                "id": 902,
+                "detail": "{subject_name} kam aufgebracht herein und murmelte, Jonas sei ein Umweltverbrecher – Jonas rollte nur mit den Augen."
+            },
+        ],
+        "Dimitri Volkov": [
+            {
+                "id": 903,
+                "detail": "Ich sah {subject_firstname} mit einer Karte im Foyer stehen und Dimitri anfahren, dass er Naturschutz nicht mit Geld aufwiegen könne."
+            },
+            {
+                "id": 904,
+                "detail": "{subject_name} knallte Dimitri einen Flyer über Naturschutz hin und sagte, er werde „gegen ihn vorgehen, egal wie reich er ist“."
+            },
+        ]
+    },
+    10: {  # Maria -> Dimitri und Viktor
+        "Dimitri Volkov": [
+            {
+                "id": 1001,
+                "detail": "{subject_firstname} flüsterte Dimitri zu, dass sie seine Geheimnisse kenne und bereit sei, sie zu nutzen, falls er nicht kooperiert."
+            },
+            {
+                "id": 1002,
+                "detail": "Dimitri verließ hastig den Wintergarten, nachdem {subject_name} ihm sagte, „der KGB hört alles“ – das klang nicht nach Spaß."
+            },
+        ],
+        "Viktor Bergmann": [
+            {
+                "id": 1003,
+                "detail": "Später hörte ich, wie {subject_firstname} Viktor drohte, seine Machenschaften öffentlich zu machen, wenn er sie weiter unterschätzt."
+            },
+            {
+                "id": 1004,
+                "detail": "{subject_name} stellte Viktor in der Lobby zur Rede und sagte, sie habe „dreckige Details“ über ihn gesammelt."
+            },
+        ]
+    },
+}

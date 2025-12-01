@@ -67,6 +67,8 @@ MURDER_TEXT_TEMPLATE = """
         Du hättest auch bei der Wahl des Zimmers darauf achten können oder die Vorhänge zuziehen als du dich ins Bett gelegt hast - 
         hast du aber nicht und das obwohl es genau hier vor 3 Jahren schonmal passiert ist. Auch wenn du damals kein Hotelgast warst.</p>
 
+        <p>Den ganzen Abend über hast du schon leichte Veränderungen gespürt in deinem Körper, verstärkter Geruchssinn und Hitzewallungen - und überall dieses verdammte Silber.</p>
+        
         <p>Während du schläfst, trifft ein kurzer Moment des klaren Vollmondlichts durch das leichte Schneetreiben dein Zimmer. Es reicht – dein Körper verändert sich.</p>
 
         <p>Du stehst auf und trittst auf den Balkon, da passiert es, du verwandelst dich und merkst wie du teilweise nicht mehr Herr deiner Sinne bist. Du wirst zum Werwolf!</p>

@@ -18,7 +18,7 @@ import hashlib
 from game_data import (
     CHARACTERS, NPCS, NPC_PLACEHOLDER_MAP,
     MOTIVE_MATRIX, DEFAULT_MOTIVE_TEXT,
-    MURDER_CLUES, RED_HERRING_CLUES
+    MURDER_CLUES, RED_HERRING_MATRIX
 )
 from game_texts import (
     PHASE3_TEXTS, MURDER_TEXT_TEMPLATE, INNOCENT_TEXT_TEMPLATE,
@@ -308,7 +308,7 @@ def select_special_roles(active_characters, murder_id):
 
     return intrigant["id"], intrigant_target["id"], desperate["id"], [lover1["id"], lover2["id"]]
 
-def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids):
+def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids, victim):
     """
     Generiert Erinnerungen für ALLE Unschuldigen:
     - 2-3 bekommen Hinweise über den Mörder
@@ -319,6 +319,7 @@ def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids)
         murder_id: ID des Mörders
         seed_tuple: Seed für Reproduzierbarkeit
         special_role_ids: Dict mit intrigant_id, desperate_id, lovers
+        victim: Dict mit Opfer-Informationen (Name wird für motive-basierte Red Herrings genutzt)
 
     Returns:
         dict: {
@@ -360,6 +361,7 @@ def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids)
 
     memories = {}
     lovers = special_role_ids.get("lovers", [])
+    victim_name = victim.get("name") if isinstance(victim, dict) else None
 
     # 1. Vergebe echte Mörder-Hinweise
     used_clues_true = set()
@@ -380,51 +382,106 @@ def generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids)
             "clue_pool": "murder"
         }
 
-    # 2. Vergebe Red Herring Hinweise
+    # 2. Vergebe Red Herring Hinweise (motiv-basiert auf Opfer)
+    active_ids = {c["id"] for c in active_chars}
+
+    def build_red_herring_pool(victim_name_local):
+        pool = []
+        if not victim_name_local:
+            return pool
+        for subject_id, victim_map in RED_HERRING_MATRIX.items():
+            if subject_id == murder_id:
+                continue  # Keine Red Herrings über den Mörder
+            if subject_id not in active_ids:
+                continue  # Nur aktive Charaktere als Subjekt erlauben
+            clues = victim_map.get(victim_name_local, [])
+            for clue in clues:
+                pool.append({**clue, "subject_id": subject_id})
+        return pool
+
+    red_pool = build_red_herring_pool(victim_name)
     used_clues_red = set()
+
     for receiver in red_herring_receivers:
         receiver_id = receiver['id']
 
-        # Mögliche Subjekte: Alle AUSSER sich selbst, Partner (falls Lover), und ausgeschlossene
+        # Pool ggf. auffrischen, wenn leer
+        if red_pool:
+            available_clues = [
+                c for c in red_pool
+                if c["id"] not in used_clues_red
+                and c["subject_id"] != receiver_id
+                and not (receiver_id in lovers and c["subject_id"] in lovers)
+            ]
+            if not available_clues:
+                used_clues_red.clear()
+                available_clues = [
+                    c for c in red_pool
+                    if c["subject_id"] != receiver_id
+                    and not (receiver_id in lovers and c["subject_id"] in lovers)
+                ]
+            if not available_clues:
+                pass  # Fallback unten nutzen
+            else:
+                clue = rng.choice(available_clues)
+                used_clues_red.add(clue["id"])
+                subject_id = clue["subject_id"]
+                subject_char = next((c for c in CHARACTERS if c["id"] == subject_id), None)
+                subject_name = subject_char["name"] if subject_char else f"Person {subject_id}"
+                subject_firstname = _get_subject_firstname(subject_char)
+
+                formatted_detail = clue["detail"].format(
+                    subject_name=subject_name,
+                    subject_firstname=subject_firstname,
+                    victim_name=victim_name or "das Opfer"
+                )
+
+                memories[receiver_id] = {
+                    "subject_id": subject_id,
+                    "clue_id": clue["id"],
+                    "is_murderer": (subject_id == murder_id),  # Könnte zufällig Mörder treffen
+                    "clue_pool": "red",
+                    "formatted_detail": formatted_detail
+                }
+                continue
+
+        # Fallback: keine passenden Red Herrings für dieses Opfer/Empfänger vorhanden
         possible_subjects = []
         for char in active_chars:
-            # Ausschließen: sich selbst
             if char['id'] == receiver_id:
                 continue
-
-            # Ausschließen: eigener Partner (falls Lover)
-            if receiver_id in lovers and char['id'] in lovers:
-                # Beide sind Lover, also Partner
+            if char['id'] == murder_id:
                 continue
-
+            if receiver_id in lovers and char['id'] in lovers:
+                continue
             possible_subjects.append(char['id'])
-
         if not possible_subjects:
-            continue  # Keine verfügbaren Subjekte
-
-        # Wähle zufälliges Subjekt
+            continue
         subject_id = rng.choice(possible_subjects)
-
-        # Wähle zufälligen Hinweis
-        available_clues = [i for i in range(1, len(RED_HERRING_CLUES) + 1) if i not in used_clues_red]
-        if not available_clues:
-            used_clues_red.clear()
-            available_clues = list(range(1, len(RED_HERRING_CLUES) + 1))
-
-        clue_id = rng.choice(available_clues)
-        used_clues_red.add(clue_id)
-
         memories[receiver_id] = {
             "subject_id": subject_id,
-            "clue_id": clue_id,
-            "is_murderer": (subject_id == murder_id),  # Könnte zufällig Mörder treffen
-            "clue_pool": "red"
+            "clue_id": 0,
+            "is_murderer": (subject_id == murder_id),
+            "clue_pool": "red",
+            "formatted_detail": "Du erinnerst dich an eine angespannte Szene, kannst die Details aber nicht mehr genau zusammenbringen."
         }
 
     return memories
 
 
-def build_memory_text(clue_id, subject_id, letter_mapping, clue_pool="murder"):
+def _get_subject_firstname(char):
+    """Liefert den bevorzugten Vornamen/Kurznamen für Erinnerungen."""
+    if not char:
+        return ""
+    overrides = {
+        4: "Pater Antonio",  # Pater Antonio Benedetti
+        6: "Sarah",          # Dr. Sarah Chen
+        8: "Max",            # Maximilian 'Max' Gold
+    }
+    return overrides.get(char["id"], char["name"].split(" ")[0])
+
+
+def build_memory_text(clue_id, subject_id, letter_mapping, clue_pool="murder", preformatted=None):
     """
     Erstellt den Erinnerungstext.
 
@@ -433,17 +490,20 @@ def build_memory_text(clue_id, subject_id, letter_mapping, clue_pool="murder"):
         subject_id: ID der Person über die der Hinweis ist
         letter_mapping: Letter-Mapping aus game_state
         clue_pool: "murder" oder "red" für den Hinweis-Pool
+        preformatted: Optional bereits formatierter Erinnerungstext
 
     Returns:
         str: Formatierter HTML-Text
     """
-    # Wähle Pool
-    pool = MURDER_CLUES if clue_pool == "murder" else RED_HERRING_CLUES
+    if preformatted:
+        return preformatted
 
-    # Finde Hinweis
-    clue = next((c for c in pool if c['id'] == clue_id), None)
+    # Wähle Pool
+    pool = MURDER_CLUES if clue_pool == "murder" else []
+
+    clue = next((c for c in pool if c.get('id') == clue_id), None)
     if not clue:
-        return ""
+        return preformatted or ""
 
     # Finde Subjekt
     subject_char = next((c for c in CHARACTERS if c['id'] == subject_id), None)
@@ -451,7 +511,7 @@ def build_memory_text(clue_id, subject_id, letter_mapping, clue_pool="murder"):
         return ""
 
     subject_name = subject_char['name']
-    subject_firstname = subject_char["name"].split(" ")[0]
+    subject_firstname = _get_subject_firstname(subject_char)
 
     # Ersetze Platzhalter
     detail_text = clue['detail'].format(
@@ -924,7 +984,7 @@ def admin():
                     "lovers": game_state.get("lovers", [])
                 }
 
-                memories = generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids)
+                memories = generate_all_memories(active_chars, murder_id, seed_tuple, special_role_ids, game_state.get("victim"))
 
                 game_state["memories_revealed"] = True
                 game_state["memories"] = memories
@@ -1125,7 +1185,8 @@ def player_view(slug):
                 clue_id=memory_data["clue_id"],
                 subject_id=memory_data["subject_id"],
                 letter_mapping=letter_mapping,
-                clue_pool=memory_data.get("clue_pool", "murder")
+                clue_pool=memory_data.get("clue_pool", "murder"),
+                preformatted=memory_data.get("formatted_detail")
             )
 
     return render_template('player.html',
